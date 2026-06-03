@@ -1,0 +1,11 @@
+services:
+  dev:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    working_dir: /workspace/perfwatch
+    command: ["pytest", "python/tests"]
+    ports:
+      - "8000:8000"
+
+# Docker is for development and testing only, not full host hardware collection.

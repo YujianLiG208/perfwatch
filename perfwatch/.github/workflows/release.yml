@@ -1,0 +1,11 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  placeholder:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release placeholder
+        run: echo "TODO: add release packaging in a later phase."

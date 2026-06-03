@@ -1,0 +1,8 @@
+[
+  {
+    "pid": 1234,
+    "name": "mock_process",
+    "cpu_percent": 12.5,
+    "rss_bytes": 268435456
+  }
+]

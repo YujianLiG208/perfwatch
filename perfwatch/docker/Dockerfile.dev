@@ -1,0 +1,16 @@
+FROM python:3.11-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential cmake ninja-build \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace/perfwatch
+
+COPY python ./python
+RUN python -m pip install --no-cache-dir --upgrade pip \
+    && python -m pip install --no-cache-dir -e "./python[dev]"
+
+COPY cpp ./cpp
+COPY tests ./tests
+
+CMD ["pytest", "python/tests"]
