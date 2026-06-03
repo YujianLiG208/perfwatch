@@ -3,9 +3,17 @@
 #include "perfwatch/collector.hpp"
 
 void test_mock_snapshot_shape();
+void test_proc_stat_parser();
+void test_meminfo_parser();
+void test_proc_pid_stat_parser();
+void test_power_supply_parser();
 
 int main() {
     test_mock_snapshot_shape();
+    test_proc_stat_parser();
+    test_meminfo_parser();
+    test_proc_pid_stat_parser();
+    test_power_supply_parser();
 
     perfwatch::MockCollector collector;
     const auto first = collector.collect();

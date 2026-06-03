@@ -32,8 +32,16 @@ enable_testing()
 add_executable(perfwatch_cpp_tests
     tests/test_snapshot.cpp
     tests/test_mock_collector.cpp
+    tests/test_proc_stat_parser.cpp
+    tests/test_meminfo_parser.cpp
+    tests/test_proc_pid_stat_parser.cpp
+    tests/test_power_supply_parser.cpp
 )
 target_link_libraries(perfwatch_cpp_tests PRIVATE perfwatch_core)
+target_compile_definitions(perfwatch_cpp_tests
+    PRIVATE
+        PERFWATCH_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tests/fixtures/linux"
+)
 add_test(NAME perfwatch_cpp_tests COMMAND perfwatch_cpp_tests)
 
 find_package(Python3 COMPONENTS Interpreter Development.Module QUIET)

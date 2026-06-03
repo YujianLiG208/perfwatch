@@ -3,7 +3,15 @@
 ## Native C++ Collector Layer
 
 The C++ layer defines simple sample structs, a `Collector` interface, and a deterministic
-`MockCollector`. Platform-specific files are compile-safe placeholders with TODO comments.
+`MockCollector`.
+
+Phase 2 implements a focused Linux parser layer for fixture-tested system file formats:
+`/proc/stat`, `/proc/meminfo`, `/proc/<pid>/stat`, and
+`/sys/class/power_supply/BAT*/uevent`. These parsers accept strings or file contents and return
+structured C++ data. They do not read the host `/proc` or `/sys` filesystem and are not yet wired
+into real runtime Linux collection.
+
+Windows collector and GPU files remain compile-safe placeholders for later phases.
 
 ## Python Orchestration Layer
 
@@ -26,5 +34,5 @@ streaming work.
 
 ## Mock and Fixture Testing Strategy
 
-Phase 1 tests use deterministic mocks. Fixture files exist for later parser work without reading
-host hardware.
+Phase 1 tests use deterministic mocks. Phase 2 adds Linux parser fixture tests without reading host
+hardware or live operating-system files.

@@ -11,12 +11,16 @@ C++ and Python mock tests verify stable values and expected keys. This is the Ph
 
 ## Fixture Tests
 
-Linux and Windows fixture directories are present for future parser work. No real parser behavior is
-implemented yet.
+Phase 2 adds fixture-backed C++ tests for Linux parser behavior. The `/proc/stat`, `/proc/meminfo`,
+`/proc/<pid>/stat`, and `/sys/class/power_supply/BAT*/uevent` parsers consume fixture strings and
+files from `tests/fixtures/linux` instead of reading the host `/proc` or `/sys` filesystem.
+
+Windows fixtures remain placeholders for later collector work.
 
 ## CI Limitations
 
-CI can validate deterministic code paths and build shape. It cannot validate real hardware sensors.
+CI can validate deterministic parser and mock code paths plus build shape. It cannot validate real
+hardware sensors or runtime Linux collection.
 
 ## Future Real-Hardware Testing
 

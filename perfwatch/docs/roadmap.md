@@ -1,7 +1,7 @@
 # Roadmap
 
 1. Skeleton and mock pipeline.
-2. Linux parser.
+2. Linux parser: fixture-tested parser layer only, without real runtime collection.
 3. SQLite persistence.
 4. FastAPI service loop.
 5. Web dashboard.
