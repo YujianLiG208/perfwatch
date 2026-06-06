@@ -16,17 +16,42 @@ Windows collector and GPU files remain compile-safe placeholders for later phase
 ## Python Orchestration Layer
 
 Python imports `perfwatch_native` when available and falls back to the Python mock collector when the
-native module is not built. This keeps Phase 1 testable without real hardware access.
+native module is not built. Phase 4 adds a minimal collector factory so the service can explicitly
+use the Python mock collector or the native-compatible collector path. Neither path requires real
+hardware sensors.
 
 ## SQLite Storage
 
 SQLite stores system samples, process samples, and events. The schema uses `ts_ms` timestamps and
-names estimated fields with `estimated` or `score`.
+names estimated fields with `estimated` or `score`. The repository supports snapshot insertion,
+recent system metric queries, latest top-process queries, and service error events.
 
 ## FastAPI Service
 
-The API exposes `/health` and `/snapshot`. A minimal WebSocket skeleton is present for future mock
-streaming work.
+Phase 4 connects collection, SQLite persistence, and FastAPI through a `ServiceState` object. The
+state owns the collector, repository, latest snapshot, stop signal, and background sampling task.
+
+FastAPI lifespan startup initializes SQLite, takes an initial sample, and starts an asyncio sampling
+loop. Each successful sample replaces the latest snapshot and is written to SQLite. Collector or
+storage exceptions are recorded in the `events` table without terminating the loop. Lifespan
+shutdown signals and awaits the task before closing the repository.
+
+The local API exposes:
+
+- `GET /health`
+- `GET /snapshot`
+- `GET /metrics/recent`
+- `GET /processes/top`
+- `WebSocket /ws/snapshot`
+
+Configuration remains intentionally small:
+
+- `PERFWATCH_SAMPLE_INTERVAL_SECONDS`, default `1.0`
+- `PERFWATCH_DATABASE_PATH`, default `perfwatch.sqlite3`
+- `PERFWATCH_USE_MOCK_COLLECTOR`, default `false`
+
+This phase implements backend service orchestration only. It does not add real Linux, Windows, GPU,
+dashboard, overlay, or packaging functionality.
 
 ## Future Dashboard Layer
 
@@ -35,4 +60,5 @@ streaming work.
 ## Mock and Fixture Testing Strategy
 
 Phase 1 tests use deterministic mocks. Phase 2 adds Linux parser fixture tests without reading host
-hardware or live operating-system files.
+hardware or live operating-system files. Phase 4 service and API tests use the mock/native-compatible
+collector interface and temporary SQLite databases.
