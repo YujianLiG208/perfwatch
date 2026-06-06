@@ -14,42 +14,37 @@ class SnapshotRepository:
     def add_snapshot(self, snapshot: dict[str, Any]) -> int:
         return self.writer.insert_snapshot(snapshot)
 
-    def add_snapshots(self, snapshots: Iterable[Mapping[str, Any]]) -> list[int]:
-        return self.writer.insert_snapshots(snapshots)
+    def initialize(self) -> None:
+        self.writer.initialize()
 
-    def add_process_samples(
+    def add_event(
         self,
+        *,
         timestamp_ms: int,
-        processes: Iterable[Mapping[str, Any]],
+        level: str,
+        source: str,
+        message: str,
     ) -> int:
-        return self.writer.insert_process_samples(timestamp_ms, processes)
-
-    def add_event(self, timestamp_ms: int, level: str, source: str, message: str) -> int:
-        return self.writer.insert_event(timestamp_ms, level, source, message)
-
-    def recent_system_samples(
-        self,
-        since_timestamp_ms: int,
-        until_timestamp_ms: int | None = None,
-        limit: int | None = None,
-    ) -> list[dict[str, Any]]:
-        return self.writer.query_recent_system_samples(
-            since_timestamp_ms,
-            until_timestamp_ms,
-            limit,
+        return self.writer.insert_event(
+            timestamp_ms=timestamp_ms,
+            level=level,
+            source=source,
+            message=message,
         )
 
-    def recent_process_samples(
+    def get_recent_metrics(self, *, limit: int = 100) -> list[dict[str, Any]]:
+        return self.writer.fetch_recent_metrics(limit=limit)
+
+    def get_top_processes(
         self,
-        since_timestamp_ms: int,
-        until_timestamp_ms: int | None = None,
-        limit: int | None = None,
+        *,
+        limit: int = 10,
+        timestamp_ms: int | None = None,
     ) -> list[dict[str, Any]]:
-        return self.writer.query_recent_process_samples(
-            since_timestamp_ms,
-            until_timestamp_ms,
-            limit,
+        return self.writer.fetch_top_processes(
+            limit=limit,
+            timestamp_ms=timestamp_ms,
         )
 
-    def apply_retention_policy(self, older_than_timestamp_ms: int) -> dict[str, int]:
-        return self.writer.apply_retention_policy(older_than_timestamp_ms)
+    def close(self) -> None:
+        self.writer.close()

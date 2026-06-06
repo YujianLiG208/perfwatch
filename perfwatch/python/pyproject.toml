@@ -13,6 +13,7 @@ dependencies = [
     "pydantic",
     "pytest",
     "httpx",
+    "websockets",
 ]
 
 [project.optional-dependencies]
