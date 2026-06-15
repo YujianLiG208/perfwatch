@@ -5,7 +5,8 @@
 3. Completed: SQLite persistence.
 4. Completed: FastAPI backend service loop using mock/native-compatible collectors, without real
    hardware collection.
-5. Web dashboard.
+5. Completed: local Vite and React dashboard with current metrics, history charts, top processes,
+   WebSocket updates, and HTTP fallback.
 6. Windows collector.
 7. GPU adapter.
 8. Overlay.

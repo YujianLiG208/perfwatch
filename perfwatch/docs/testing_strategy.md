@@ -27,11 +27,34 @@ error events. HTTP coverage includes `/health`, `/snapshot`, `/metrics/recent`, 
 Every service test uses pytest temporary paths for its database. Tests do not require real hardware
 sensors, a Linux VM, or a compiled native module.
 
+## Dashboard Tests
+
+Phase 5 uses Vitest and React Testing Library. Tests cover:
+
+- dashboard loading, current metric rendering, fatal errors, and empty process data;
+- snapshot-to-chart mapping, byte/percent formatting, timestamp de-duplication, and the 60-sample
+  limit;
+- initial Phase 4 HTTP requests and top-process rendering capped at ten rows;
+- WebSocket snapshot handling, visible connection modes, bounded reconnect delay selection, and
+  five-second HTTP fallback polling;
+- the complete 1/2/4/8/10-second reconnect schedule, reset after connection, constructor failure,
+  stale fallback response rejection, and unmount cleanup.
+
+HTTP responses and WebSocket connections are deterministic test doubles that mirror the complete
+Phase 4 snapshot structure. No frontend test requires a running API or host hardware.
+
+The Phase 5 validation run completed with 20 frontend tests, 16 Python tests, and one C++ test
+passing. The Python suite retains an existing Starlette/httpx deprecation warning. The production
+frontend build succeeds and reports a non-blocking Vite advisory because the single Recharts bundle
+is larger than 500 kB before gzip compression.
+
 ## CI Limitations
 
 CI can validate deterministic parser and mock code paths plus build shape. It cannot validate real
 hardware sensors or runtime Linux collection. Phase 4 validates backend orchestration through the
-mock/native-compatible collector interface only.
+mock/native-compatible collector interface, and Phase 5 validates browser behavior through mocked
+network boundaries. Browser visual QA remains an additional local check rather than a hardware
+test.
 
 ## Future Real-Hardware Testing
 
