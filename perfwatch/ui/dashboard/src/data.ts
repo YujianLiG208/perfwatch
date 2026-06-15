@@ -1,0 +1,53 @@
+import type { MetricSample, Snapshot } from "./types";
+
+const CHART_SAMPLE_LIMIT = 60;
+
+export function snapshotToMetricSample(snapshot: Snapshot): MetricSample {
+  const memoryPercent =
+    snapshot.memory.total_bytes > 0
+      ? (snapshot.memory.used_bytes / snapshot.memory.total_bytes) * 100
+      : 0;
+
+  return {
+    timestamp_ms: snapshot.timestamp_ms,
+    cpu_percent: snapshot.cpu.usage_percent,
+    memory_percent: memoryPercent,
+    cpu_power_watts: snapshot.cpu.package_power_watts,
+    battery_percent: snapshot.battery.percent,
+    battery_power_watts: snapshot.battery.power_watts,
+  };
+}
+
+export function appendMetricSample(
+  samples: MetricSample[],
+  sample: MetricSample,
+): MetricSample[] {
+  const byTimestamp = new Map(
+    samples.map((currentSample) => [currentSample.timestamp_ms, currentSample]),
+  );
+  byTimestamp.set(sample.timestamp_ms, sample);
+
+  return [...byTimestamp.values()]
+    .sort((left, right) => left.timestamp_ms - right.timestamp_ms)
+    .slice(-CHART_SAMPLE_LIMIT);
+}
+
+export function formatPercent(value: number): string {
+  return `${value.toFixed(1)}%`;
+}
+
+export function formatBytes(value: number): string {
+  if (value <= 0) {
+    return "0 B";
+  }
+
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const unitIndex = Math.min(
+    Math.floor(Math.log(value) / Math.log(1024)),
+    units.length - 1,
+  );
+  const scaledValue = value / 1024 ** unitIndex;
+  const fractionDigits = scaledValue >= 10 || unitIndex === 0 ? 0 : 1;
+
+  return `${scaledValue.toFixed(fractionDigits)} ${units[unitIndex]}`;
+}
