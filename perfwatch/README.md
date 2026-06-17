@@ -1,84 +1,86 @@
 # perfwatch
 
-perfwatch is a Phase 1 skeleton for a cross-platform performance and energy monitoring tool.
-It is planned as a hybrid C++/Python project: C++ for low-overhead collection interfaces and
-Python for orchestration, analytics, SQLite persistence, and a local API.
+perfwatch is a local performance and energy monitoring prototype. It combines a C++ collection
+layer, Python orchestration and persistence, a FastAPI service, and a React dashboard.
 
 ## Current Status
 
-Phase 1 only. The repository contains project initialization, deterministic mock data,
-compile-safe C++ placeholders, Python package scaffolding, SQLite schema/writer skeletons,
-FastAPI endpoints, CI/Docker development configuration, and minimal tests.
+Implementation has reached Phase 5, but the phases are not all merged into `main`.
 
-## Architecture Overview
+| Phase | Branch | Implemented scope |
+| --- | --- | --- |
+| 1 | `main` | Project skeleton, deterministic mock pipeline, Python/C++ boundaries, CI and development setup. |
+| 2 | `main` | Fixture-tested parsers for Linux `/proc/stat`, `/proc/meminfo`, `/proc/<pid>/stat`, and battery `uevent` data. |
+| 3 | `codex/phase-3-sqlite-persistence` | Hardened SQLite writes, batch insertion, events, recent-sample queries, indexes, and retention cleanup. |
+| 4 | `codex/phase-4-service-loop` | Background sampling loop, SQLite persistence, API history/process queries, WebSocket streaming, configuration, and graceful shutdown. |
+| 5 | `codex/phase-5` | Vite/React/TypeScript dashboard with current metrics, history charts, top processes, WebSocket updates, and HTTP fallback. |
 
-- Native C++ layer: data structs, collector interface, deterministic `MockCollector`, and optional
-  `perfwatch_native` pybind11 module.
-- Python layer: native import fallback, deterministic Python mock collector, minimal analytics,
-  SQLite writer, and FastAPI service.
-- Storage: local SQLite tables for system samples, process samples, and events.
-- Future UI: dashboard and overlay directories are placeholders only.
+Phase 3 and Phase 4 were developed from Phase 2 as separate branches. Consequently, the dedicated
+Phase 3 persistence hardening is not part of the Phase 4/5 branch history.
 
-## What Works Now
+## Implemented Architecture
 
-- `GET /health` returns `{"status": "ok"}`.
-- `GET /snapshot` returns deterministic mock snapshot data.
-- SQLite schema initialization and insertion of one mock snapshot.
-- Minimal C++ tests for deterministic mock data.
-- Minimal Python tests for mock collection, analytics, storage, and API behavior.
+- **C++:** collector interfaces, deterministic mock data, optional pybind11 bindings, and
+  fixture-driven Linux parsers. The parsers do not read the live host filesystem.
+- **Python:** mock/native-compatible collection, simple battery and process-energy estimates,
+  SQLite storage, and service orchestration.
+- **API:** `GET /health`, `GET /snapshot`, `GET /metrics/recent`, `GET /processes/top`, and
+  `WebSocket /ws/snapshot` on the Phase 4/5 branches.
+- **Dashboard:** local CPU, memory, battery, package-power, process, history, and connection views
+  on the Phase 5 branch.
 
-## Intentionally Not Implemented Yet
+## Run Phase 5 Locally
 
-- Real Linux `/proc` or `/sys` collection.
-- Real Windows PDH/WMI collection.
-- GPU collection.
-- Transparent overlay.
-- Full web dashboard.
-- Complex battery prediction.
-- Installer or release packaging.
+Switch to the latest implementation branch:
 
-## Local Setup
+```powershell
+git switch codex/phase-5
+```
 
-Python:
+Set up and start the API:
 
-```bash
-cd perfwatch/python
+```powershell
+cd python
 python -m venv .venv
-# activate the venv for your shell
-pip install -e ".[dev]"
-pytest
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+$env:PERFWATCH_USE_MOCK_COLLECTOR = "true"
+.\.venv\Scripts\python.exe -m uvicorn perfwatch.api.app:app --reload
 ```
 
-API:
+In another terminal, start the dashboard:
 
-```bash
-cd perfwatch/python
-uvicorn perfwatch.api.app:app --reload
+```powershell
+cd ui\dashboard
+npm.cmd install
+npm.cmd run dev
 ```
 
-C++:
+Open `http://127.0.0.1:5173`.
 
-```bash
-cd perfwatch
+## Validation
+
+Run Python and C++ tests from the repository root:
+
+```powershell
+python -m pytest python/tests
 cmake -S cpp -B build
-cmake --build build
-ctest --test-dir build --output-on-failure
+cmake --build build --config Debug
+ctest --test-dir build --output-on-failure -C Debug
 ```
 
-Docker development:
+On the Phase 5 branch, validate the dashboard separately:
 
-```bash
-cd perfwatch
-docker compose -f docker/docker-compose.yml build
-docker compose -f docker/docker-compose.yml run --rm dev
+```powershell
+cd ui\dashboard
+npm.cmd run test
+npm.cmd run build
 ```
 
-Docker is for development and testing only. It is not the production runtime for reading host
-hardware sensors.
+## Current Limitations
 
-## Engineering Honesty
-
-- Battery time is estimated from energy and discharge power inputs.
-- Process energy score is an intentionally simple estimate, not a real measurement.
-- CI cannot validate real hardware sensors.
-- Docker cannot represent full host hardware access for production collection.
+- Linux support is parser-only; live `/proc` and `/sys` collection is not wired into the runtime.
+- Windows PDH/WMI collection, GPU adapters, the overlay, and release packaging are not implemented.
+- Mock/native-compatible data paths are used for service and dashboard validation.
+- Battery runtime and process energy values are estimates; process scores are relative indicators,
+  not measured watts.
+- Automated tests do not validate real hardware sensors.
