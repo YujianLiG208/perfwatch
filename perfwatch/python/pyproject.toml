@@ -10,13 +10,12 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi",
     "uvicorn",
-    "pydantic",
-    "pytest",
-    "httpx",
 ]
 
 [project.optional-dependencies]
 dev = [
+    "httpx",
+    "pytest",
     "ruff",
     "mypy",
 ]
