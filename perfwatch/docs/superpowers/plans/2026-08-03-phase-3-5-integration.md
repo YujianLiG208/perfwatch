@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Merge the Phase 3 persistence branch and the Phase 4/5 service/dashboard branch into one validated `codex/cicd` history, then prepare it for a pull request to `main`.
+**Goal:** Merge the Phase 3 persistence branch and the Phase 4/5 service/dashboard branch into one validated `codex/phase-3-5-integration` history, then prepare it for a pull request to `main`.
 
 **Architecture:** Keep the Phase 3 `SQLiteWriter` as the persistence foundation and add the Phase 4 service-facing query methods to it. Keep `SnapshotRepository` as a thin delegation layer so the service, API, and tests use one storage implementation without adapters or duplicated queries.
 
@@ -12,9 +12,11 @@
 
 - Do not rewrite `codex/phase-3-sqlite-persistence`, `codex/phase-4-service-loop`, or `codex/phase-5`.
 - The target history must contain commits `8298574`, `27db3f6`, and `780dd05`.
+- Execute this plan only on `codex/phase-3-5-integration`; do not add integration commits to another branch.
 - Do not stage or overwrite pre-existing user changes to `perfwatch/README.md` or `perfwatch/AGENTS.md`.
-- Stop before Task 1 if the execution worktree is not clean; ask the owner to commit or relocate pre-existing changes. Do not stash them automatically.
-- Use `superpowers:using-git-worktrees` before execution and perform all implementation in an isolated worktree.
+- Stop before Task 1 if the dedicated execution worktree is not clean; ask the owner to commit or relocate pre-existing changes. Do not stash them automatically.
+- Open this plan from the Codex task/worktree already assigned to `codex/phase-3-5-integration`; do not switch branches while executing it.
+- Use `superpowers:using-git-worktrees` before execution to verify that the task is isolated; if it is not isolated, stop and create a dedicated Codex worktree for `codex/phase-3-5-integration` before continuing.
 - Preserve Python 3.11+, C++17, deterministic mock tests, and fixture-only hardware parser tests.
 - Do not add Terraform, cloud infrastructure, remote telemetry, storage adapters, or new persistence dependencies.
 - Follow the repository stage order for every task: Plan only, Implement visibly, Validate only, update the applicable process note, review the scoped diff, commit.
@@ -51,7 +53,7 @@
 
 ---
 
-### Task 0: Release `codex/cicd` into an Isolated Worktree
+### Task 0: Verify the `codex/phase-3-5-integration` Execution Worktree
 
 **Files:**
 
@@ -59,44 +61,24 @@
 
 **Interfaces:**
 
-- Consumes: the existing `codex/cicd` branch and owner-resolved pre-existing README/`AGENTS.md` changes.
-- Produces: a clean isolated worktree with the existing `codex/cicd` branch checked out.
+- Consumes: a new Codex task/worktree already assigned to `codex/phase-3-5-integration`, based on commit `f192370` or a descendant containing the approved designs and implementation plans.
+- Produces: a clean, isolated `codex/phase-3-5-integration` worktree ready for the Phase merges.
 
-- [ ] **Step 1: Require a clean original worktree**
+- [ ] **Step 1: Invoke the required worktree skill**
 
-Run from the original Git repository root:
+Use `superpowers:using-git-worktrees` to verify that the current Codex task is already isolated. Do not create or switch branches, and do not continue in the original working copy. If the skill reports that the task is not isolated, stop and create a dedicated Codex worktree for the existing `codex/phase-3-5-integration` branch.
 
-```powershell
-git branch --show-current
-git status --short
-```
+- [ ] **Step 2: Verify the dedicated integration worktree**
 
-Expected: the original checkout is on `codex/cicd` and status is empty. If README or `AGENTS.md` is still modified/untracked, stop and ask the owner to commit or relocate it; do not stash or delete it.
-
-- [ ] **Step 2: Release the branch from the original checkout**
-
-Run only after Step 1 passes:
-
-```powershell
-git switch main
-```
-
-Expected: the original checkout moves to `main`, leaving `codex/cicd` available for a separate worktree.
-
-- [ ] **Step 3: Invoke the required worktree skill**
-
-Use `superpowers:using-git-worktrees` to create an isolated worktree for the existing `codex/cicd` branch. Follow that skill's directory selection and safety checks instead of inventing another worktree path or branch.
-
-- [ ] **Step 4: Verify the integration worktree**
-
-Run in the new worktree:
+Run from the Git repository root in that worktree:
 
 ```powershell
 git branch --show-current
 git status --short
+git merge-base --is-ancestor f192370 HEAD
 ```
 
-Expected: branch is `codex/cicd` and status is empty.
+Expected: branch is exactly `codex/phase-3-5-integration`, status is empty, and the ancestry command exits 0. If README or `AGENTS.md` is modified/untracked, stop and ask the owner to commit or relocate it; do not stash or delete it.
 
 ---
 
@@ -111,8 +93,8 @@ Expected: branch is `codex/cicd` and status is empty.
 
 **Interfaces:**
 
-- Consumes: `codex/cicd` containing the approved design documents.
-- Produces: `codex/cicd` history containing `27db3f6` and `780dd05`, with Phase 5 tests passing before Phase 3 is introduced.
+- Consumes: `codex/phase-3-5-integration` containing the approved design documents and implementation plans.
+- Produces: `codex/phase-3-5-integration` history containing `27db3f6` and `780dd05`, with Phase 5 tests passing before Phase 3 is introduced.
 
 - [ ] **Step 1: Verify the execution preconditions**
 
@@ -125,7 +107,7 @@ git merge-base --is-ancestor 27db3f6 codex/phase-5
 git merge-base --is-ancestor 780dd05 codex/phase-5
 ```
 
-Expected: the isolated worktree is on `codex/cicd`, `git status --short` is empty, and both ancestry commands exit 0.
+Expected: the isolated worktree is on `codex/phase-3-5-integration`, `git status --short` is empty, and both ancestry commands exit 0.
 
 - [ ] **Step 2: Merge the published Phase 5 history**
 
@@ -135,7 +117,7 @@ Run:
 git merge --no-edit codex/phase-5
 ```
 
-Expected: a merge commit is created because `codex/cicd` already contains the approved design-document commit; no published Phase branch is rewritten.
+Expected: a merge commit is created because `codex/phase-3-5-integration` already contains the approved design and plan commits; no published Phase branch is rewritten.
 
 - [ ] **Step 3: Install the merged development dependencies**
 
@@ -524,7 +506,7 @@ Expected: one merge commit with both parents and the reviewed persistence resolu
 Use these exact facts throughout the five documents:
 
 ```text
-- Phase 3 persistence, Phase 4 service loop, and Phase 5 dashboard are integrated on codex/cicd.
+- Phase 3 persistence, Phase 4 service loop, and Phase 5 dashboard are integrated on codex/phase-3-5-integration.
 - main remains the Phase 2 baseline until the integration pull request is merged.
 - Linux support is fixture/parser-only; live Linux, Windows PDH/WMI, GPU, overlay, and installers remain incomplete.
 - Automated tests use deterministic mocks and fixtures and do not validate physical sensors.
@@ -616,7 +598,7 @@ Expected: the graph visibly contains both Phase branches, the documentation comm
 
 **Interfaces:**
 
-- Consumes: clean, fully validated `codex/cicd` integration history.
+- Consumes: clean, fully validated `codex/phase-3-5-integration` integration history.
 - Produces: owner-approved `main` history containing the Phase 3, Phase 4, and Phase 5 commits.
 
 - [ ] **Step 1: Verify GitHub authentication and push the integration branch**
@@ -625,7 +607,7 @@ Run from the Git repository root:
 
 ```powershell
 gh auth status
-git push origin codex/cicd
+git push origin codex/phase-3-5-integration
 ```
 
 Expected: authentication succeeds and the remote integration branch matches local HEAD. If authentication is invalid, stop and ask the owner to reauthenticate; do not replace credentials automatically.
@@ -635,7 +617,7 @@ Expected: authentication succeeds and the remote integration branch matches loca
 Run:
 
 ```powershell
-gh pr create --base main --head codex/cicd --title "Integrate Phase 3 through 5" --body "Combines Phase 3 SQLite persistence with the Phase 4 service loop and Phase 5 dashboard. Full Python, C++, frontend, and Ruff validation completed locally."
+gh pr create --base main --head codex/phase-3-5-integration --title "Integrate Phase 3 through 5" --body "Combines Phase 3 SQLite persistence with the Phase 4 service loop and Phase 5 dashboard. Full Python, C++, frontend, and Ruff validation completed locally."
 ```
 
 If the pull request already exists, use `gh pr view --web` instead of creating a duplicate.
@@ -665,7 +647,7 @@ Expected: all three ancestry commands exit 0.
 
 Do not begin the CI/CD implementation plan until all of the following are true:
 
-- The three Phase commits are ancestors of `codex/cicd`.
+- The three Phase commits are ancestors of `codex/phase-3-5-integration`.
 - Full Python, C++, and frontend validation has fresh passing output.
 - The integrated documentation states the remaining hardware limitations accurately.
 - The working tree is clean.
@@ -677,5 +659,7 @@ Do not begin the CI/CD implementation plan until all of the following are true:
 - Reviewed against `Phase 3-5 audit and integration.md` on 2026-08-03.
 - Verified coverage for published-branch ancestry, the five audited conflicts, Phase 3 transaction/query/retention behavior, Phase 4 service interfaces, Phase 5 frontend validation, and owner-approved merge to `main`.
 - Verified that writer and repository method names/signatures match their service and test consumers.
+- Corrected the execution context on 2026-08-19 so setup, integration, documentation, push, pull request, and completion steps all target `codex/phase-3-5-integration`.
+- Revalidation passed 11 branch-plan assertions, the placeholder scan, and `git diff --check`.
 - Placeholder and trailing-whitespace scans passed.
 - No merge or implementation test was run while writing this plan; all executable validation commands are assigned to implementation tasks above.
