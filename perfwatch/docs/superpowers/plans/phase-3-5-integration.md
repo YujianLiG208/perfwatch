@@ -660,6 +660,7 @@ Do not begin the CI/CD implementation plan until all of the following are true:
 - Verified coverage for published-branch ancestry, the five audited conflicts, Phase 3 transaction/query/retention behavior, Phase 4 service interfaces, Phase 5 frontend validation, and owner-approved merge to `main`.
 - Verified that writer and repository method names/signatures match their service and test consumers.
 - Corrected the execution context on 2026-08-19 so setup, integration, documentation, push, pull request, and completion steps all target `codex/phase-3-5-integration`.
+- Renamed this plan to `phase-3-5-integration.md` on 2026-08-19 so the execution branch can consume a stable, date-independent path.
 - Revalidation passed 11 branch-plan assertions, the placeholder scan, and `git diff --check`.
 - Placeholder and trailing-whitespace scans passed.
 - No merge or implementation test was run while writing this plan; all executable validation commands are assigned to implementation tasks above.
