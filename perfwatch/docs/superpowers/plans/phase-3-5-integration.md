@@ -217,7 +217,7 @@ apply_retention_policy(older_than_timestamp_ms: int) -> dict[str, int]
 close() -> None
 ```
 
-- [ ] **Step 1: Start the Phase 3 merge without committing**
+- [x] **Step 1: Start the Phase 3 merge without committing**
 
 Run:
 
@@ -228,7 +228,7 @@ git diff --name-only --diff-filter=U
 
 Expected: Git stops for conflicts. The unresolved list is limited to the audited overlap: roadmap, testing strategy, repository, writer, and writer tests.
 
-- [ ] **Step 2: Use Phase 3 as the starting point for the three persistence conflicts**
+- [x] **Step 2: Use Phase 3 as the starting point for the three persistence conflicts**
 
 Run:
 
@@ -242,7 +242,7 @@ git checkout --ours -- perfwatch/docs/testing_strategy.md
 
 Expected: the implementation/test files contain Phase 3 behavior; documentation remains temporarily at Phase 5 wording for a focused follow-up task.
 
-- [ ] **Step 3: Run the Phase 4/5 tests to prove the Phase 3-only interface is insufficient**
+- [x] **Step 3: Run the Phase 4/5 tests to prove the Phase 3-only interface is insufficient**
 
 Run:
 
@@ -252,7 +252,7 @@ python -m pytest python/tests/test_api.py python/tests/test_service.py -v
 
 Expected: FAIL because the Phase 3 repository lacks `initialize`, `get_recent_metrics`, `get_top_processes`, or `close`.
 
-- [ ] **Step 4: Add a rollback regression test before changing the writer**
+- [x] **Step 4: Add a rollback regression test before changing the writer**
 
 Add to `perfwatch/python/tests/test_sqlite_writer.py`:
 
@@ -278,7 +278,7 @@ def test_sqlite_writer_rolls_back_snapshot_batch_on_invalid_process(tmp_path) ->
     assert process_count == 0
 ```
 
-- [ ] **Step 5: Run the rollback test to establish its result against Phase 3**
+- [x] **Step 5: Run the rollback test to establish its result against Phase 3**
 
 Run:
 
@@ -288,7 +288,7 @@ python -m pytest python/tests/test_sqlite_writer.py::test_sqlite_writer_rolls_ba
 
 Expected: PASS. This test records the Phase 3 transaction guarantee so later query additions cannot regress it.
 
-- [ ] **Step 6: Add the Phase 5 dashboard query test**
+- [x] **Step 6: Add the Phase 5 dashboard query test**
 
 Add to `perfwatch/python/tests/test_sqlite_writer.py`:
 
@@ -311,7 +311,7 @@ def test_sqlite_writer_fetches_dashboard_metrics_and_top_processes(tmp_path) -> 
     assert [process["name"] for process in processes] == ["latest"]
 ```
 
-- [ ] **Step 7: Run the dashboard query test to verify it fails**
+- [x] **Step 7: Run the dashboard query test to verify it fails**
 
 Run:
 
@@ -321,7 +321,7 @@ python -m pytest python/tests/test_sqlite_writer.py::test_sqlite_writer_fetches_
 
 Expected: FAIL with missing `fetch_recent_metrics` or `fetch_top_processes`.
 
-- [ ] **Step 8: Add the Phase 5 query methods to the Phase 3 writer**
+- [x] **Step 8: Add the Phase 5 query methods to the Phase 3 writer**
 
 Add `fetch_recent_metrics`, `fetch_top_processes`, `close`, and `_metric_from_row` to `SQLiteWriter`. Copy their SQL and row-shaping behavior from commit `780dd05` without changing the Phase 3 insertion/query/retention methods. The required public behavior is:
 
@@ -421,7 +421,7 @@ def _metric_from_row(row: sqlite3.Row) -> dict[str, Any]:
 
 Keep this nested response shape exactly. Do not return database `id` fields.
 
-- [ ] **Step 9: Expand the Phase 3 repository with the Phase 5 service interface**
+- [x] **Step 9: Expand the Phase 3 repository with the Phase 5 service interface**
 
 Add these exact methods to `SnapshotRepository`; keep the existing Phase 3 methods unchanged:
 
@@ -463,7 +463,7 @@ def add_event(
     )
 ```
 
-- [ ] **Step 10: Run the combined persistence, service, and API tests**
+- [x] **Step 10: Run the combined persistence, service, and API tests**
 
 Run:
 
@@ -473,7 +473,24 @@ python -m pytest python/tests/test_sqlite_writer.py python/tests/test_service.py
 
 Expected: PASS, including rollback, retention, dashboard history, top-process queries, service sampling, and WebSocket/API behavior.
 
-- [ ] **Step 11: Resolve and stage the merge**
+**Execution note (2026-08-20):**
+
+- The Codex shell could not update the linked-worktree `ORIG_HEAD` because the
+  shared Git metadata was not writable. Per `AGENTS.md`, execution stopped and
+  the owner ran the merge and conflict-baseline checkout commands manually.
+- The unresolved list matched the five audited paths exactly. The three
+  persistence files started from Phase 3, while roadmap and testing-strategy
+  wording remained at the Phase 5 baseline for Task 3.
+- The Phase 3-only service/API run failed 9 tests on the missing service
+  interface. The rollback characterization passed, the dashboard query test
+  failed on the missing writer method, and both became green after the minimal
+  writer/repository integration.
+- Fresh combined validation passed all 20 persistence, service, and API tests
+  in 3.50 seconds. One existing Starlette/httpx deprecation warning remained.
+  Merge staging completed with no unresolved paths or whitespace errors.
+  Review and commit remain pending Step 12.
+
+- [x] **Step 11: Resolve and stage the merge**
 
 Run:
 

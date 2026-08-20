@@ -39,3 +39,7 @@ CREATE TABLE IF NOT EXISTS events (
     source TEXT NOT NULL,
     message TEXT NOT NULL
 );
+
+CREATE INDEX IF NOT EXISTS idx_samples_system_ts_ms ON samples_system (ts_ms);
+CREATE INDEX IF NOT EXISTS idx_samples_process_ts_ms ON samples_process (ts_ms);
+CREATE INDEX IF NOT EXISTS idx_events_ts_ms ON events (ts_ms);
