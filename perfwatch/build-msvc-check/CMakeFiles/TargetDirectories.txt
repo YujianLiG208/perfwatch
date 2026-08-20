@@ -1,5 +1,0 @@
-C:/Users/Yujian Li/.codex/worktrees/9bd6/Performance & Energy Monitor/perfwatch/build-msvc-check/CMakeFiles/perfwatch_core.dir
-C:/Users/Yujian Li/.codex/worktrees/9bd6/Performance & Energy Monitor/perfwatch/build-msvc-check/CMakeFiles/perfwatch_cpp_tests.dir
-C:/Users/Yujian Li/.codex/worktrees/9bd6/Performance & Energy Monitor/perfwatch/build-msvc-check/CMakeFiles/RUN_TESTS.dir
-C:/Users/Yujian Li/.codex/worktrees/9bd6/Performance & Energy Monitor/perfwatch/build-msvc-check/CMakeFiles/ALL_BUILD.dir
-C:/Users/Yujian Li/.codex/worktrees/9bd6/Performance & Energy Monitor/perfwatch/build-msvc-check/CMakeFiles/ZERO_CHECK.dir
