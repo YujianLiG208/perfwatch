@@ -64,11 +64,11 @@
 - Consumes: a new Codex task/worktree already assigned to `codex/phase-3-5-integration`, based on commit `f192370` or a descendant containing the approved designs and implementation plans.
 - Produces: a clean, isolated `codex/phase-3-5-integration` worktree ready for the Phase merges.
 
-- [ ] **Step 1: Invoke the required worktree skill**
+- [x] **Step 1: Invoke the required worktree skill**
 
 Use `superpowers:using-git-worktrees` to verify that the current Codex task is already isolated. Do not create or switch branches, and do not continue in the original working copy. If the skill reports that the task is not isolated, stop and create a dedicated Codex worktree for the existing `codex/phase-3-5-integration` branch.
 
-- [ ] **Step 2: Verify the dedicated integration worktree**
+- [x] **Step 2: Verify the dedicated integration worktree**
 
 Run from the Git repository root in that worktree:
 
@@ -96,7 +96,7 @@ Expected: branch is exactly `codex/phase-3-5-integration`, status is empty, and 
 - Consumes: `codex/phase-3-5-integration` containing the approved design documents and implementation plans.
 - Produces: `codex/phase-3-5-integration` history containing `27db3f6` and `780dd05`, with Phase 5 tests passing before Phase 3 is introduced.
 
-- [ ] **Step 1: Verify the execution preconditions**
+- [x] **Step 1: Verify the execution preconditions**
 
 Run:
 
@@ -109,7 +109,7 @@ git merge-base --is-ancestor 780dd05 codex/phase-5
 
 Expected: the isolated worktree is on `codex/phase-3-5-integration`, `git status --short` is empty, and both ancestry commands exit 0.
 
-- [ ] **Step 2: Merge the published Phase 5 history**
+- [x] **Step 2: Merge the published Phase 5 history**
 
 Run:
 
@@ -119,7 +119,7 @@ git merge --no-edit codex/phase-5
 
 Expected: a merge commit is created because `codex/phase-3-5-integration` already contains the approved design and plan commits; no published Phase branch is rewritten.
 
-- [ ] **Step 3: Install the merged development dependencies**
+- [x] **Step 3: Install the merged development dependencies**
 
 Run from `perfwatch/`:
 
@@ -130,7 +130,7 @@ npm --prefix ui/dashboard ci
 
 Expected: both commands exit 0.
 
-- [ ] **Step 4: Verify the Phase 5 Python and frontend baseline**
+- [x] **Step 4: Verify the Phase 5 Python and frontend baseline**
 
 Run:
 
@@ -142,7 +142,7 @@ npm --prefix ui/dashboard run build
 
 Expected: pytest, Vitest, TypeScript, and Vite all pass. If this baseline fails, stop and diagnose the Phase 5 failure before merging Phase 3.
 
-- [ ] **Step 5: Verify the Phase 5 native baseline**
+- [x] **Step 5: Verify the Phase 5 native baseline**
 
 Run:
 
@@ -153,6 +153,23 @@ ctest --test-dir build --output-on-failure -C Release
 ```
 
 Expected: CMake configure/build and all CTest cases pass.
+
+**Execution note (2026-08-19):**
+
+- To preserve the `AGENTS.md` stage order, Step 2 was started with
+  `git merge --no-commit --no-ff codex/phase-5`. An external operation later
+  created and pushed merge commit `65dd259` with parents `0026d50` and
+  `780dd05` before the planned Review and Commit checkpoints.
+- The published merge commit will not be amended. The owner approved a
+  non-empty process-note follow-up commit; Step 6 remains open until that
+  change is reviewed, committed, and the baseline evidence is recorded.
+- After the default Vitest fork workers timed out during startup, the owner
+  approved `test.fileParallelism: false`. Fresh validation passed 16 Python
+  tests, 20 frontend tests, the TypeScript/Vite build, CMake configure and
+  Release build, and 1 CTest case.
+- CMake required Developer PowerShell to detect MSVC. It did not discover
+  `pybind11`, so the optional `perfwatch_native` module was skipped; the core
+  C++ library and test executable built successfully.
 
 - [ ] **Step 6: Record the baseline commit**
 
