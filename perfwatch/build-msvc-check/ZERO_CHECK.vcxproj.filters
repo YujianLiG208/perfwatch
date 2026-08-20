@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="18.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Yujian Li\.codex\worktrees\9bd6\Performance &amp; Energy Monitor\perfwatch\build-msvc-check\CMakeFiles\fbc7bd764f81d39d98ebf48bfb21d067\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{A25E26CD-020E-32ED-AAC9-54CADB62F986}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

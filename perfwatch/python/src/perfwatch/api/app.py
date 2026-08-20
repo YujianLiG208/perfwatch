@@ -1,10 +1,46 @@
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from perfwatch.api.routes import router as routes_router
+from perfwatch.api.service import ServiceState
 from perfwatch.api.websocket import router as websocket_router
+from perfwatch.collectors import Collector, create_collector
+from perfwatch.config.settings import Settings, get_settings
+from perfwatch.storage.repository import SnapshotRepository
 
-app = FastAPI(title="perfwatch", version="0.1.0")
-app.include_router(routes_router)
-app.include_router(websocket_router)
+
+def create_app(
+    *,
+    settings: Settings | None = None,
+    collector: Collector | None = None,
+    repository: SnapshotRepository | None = None,
+) -> FastAPI:
+    resolved_settings = settings or get_settings()
+    service = ServiceState(
+        settings=resolved_settings,
+        collector=collector
+        or create_collector(use_mock=resolved_settings.use_mock_collector),
+        repository=repository or SnapshotRepository(resolved_settings.database_path),
+    )
+
+    @asynccontextmanager
+    async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+        application.state.service = service
+        await service.start()
+        try:
+            yield
+        finally:
+            await service.stop()
+
+    application = FastAPI(title="perfwatch", version="0.1.0", lifespan=lifespan)
+    application.state.service = service
+    application.include_router(routes_router)
+    application.include_router(websocket_router)
+    return application
+
+
+app = create_app()
