@@ -11,5 +11,3 @@
 7. GPU adapter.
 8. Overlay.
 9. Packaging.
-
-Phase 3 remains limited to SQLite persistence and does not implement real runtime collection.

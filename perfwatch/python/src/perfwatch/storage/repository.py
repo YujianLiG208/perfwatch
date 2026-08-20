@@ -17,6 +17,16 @@ class SnapshotRepository:
     def initialize(self) -> None:
         self.writer.initialize()
 
+    def add_snapshots(self, snapshots: Iterable[Mapping[str, Any]]) -> list[int]:
+        return self.writer.insert_snapshots(snapshots)
+
+    def add_process_samples(
+        self,
+        timestamp_ms: int,
+        processes: Iterable[Mapping[str, Any]],
+    ) -> int:
+        return self.writer.insert_process_samples(timestamp_ms, processes)
+
     def add_event(
         self,
         *,
@@ -32,6 +42,30 @@ class SnapshotRepository:
             message=message,
         )
 
+    def recent_system_samples(
+        self,
+        since_timestamp_ms: int,
+        until_timestamp_ms: int | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
+        return self.writer.query_recent_system_samples(
+            since_timestamp_ms,
+            until_timestamp_ms,
+            limit,
+        )
+
+    def recent_process_samples(
+        self,
+        since_timestamp_ms: int,
+        until_timestamp_ms: int | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
+        return self.writer.query_recent_process_samples(
+            since_timestamp_ms,
+            until_timestamp_ms,
+            limit,
+        )
+
     def get_recent_metrics(self, *, limit: int = 100) -> list[dict[str, Any]]:
         return self.writer.fetch_recent_metrics(limit=limit)
 
@@ -41,10 +75,10 @@ class SnapshotRepository:
         limit: int = 10,
         timestamp_ms: int | None = None,
     ) -> list[dict[str, Any]]:
-        return self.writer.fetch_top_processes(
-            limit=limit,
-            timestamp_ms=timestamp_ms,
-        )
+        return self.writer.fetch_top_processes(limit=limit, timestamp_ms=timestamp_ms)
+
+    def apply_retention_policy(self, older_than_timestamp_ms: int) -> dict[str, int]:
+        return self.writer.apply_retention_policy(older_than_timestamp_ms)
 
     def close(self) -> None:
         self.writer.close()

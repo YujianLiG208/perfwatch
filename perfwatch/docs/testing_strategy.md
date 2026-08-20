@@ -5,11 +5,6 @@
 Python unit tests cover deterministic mock collection, simple analytics helpers, SQLite insertion,
 repository queries, event insertion, configuration, and API endpoints.
 
-Phase 3 expands SQLite tests to cover schema initialization, single and batch snapshot insertion,
-process sample insertion, event insertion, recent timestamp-window queries, retention cleanup, and
-missing optional snapshot fields. These tests use `tmp_path` database files and do not create
-permanent `.db`, `.sqlite`, or `.sqlite3` files in the repository.
-
 ## Mock Tests
 
 C++ and Python mock tests verify stable values and expected keys. This is the Phase 1 test anchor.

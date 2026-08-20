@@ -64,11 +64,11 @@
 - Consumes: a new Codex task/worktree already assigned to `codex/phase-3-5-integration`, based on commit `f192370` or a descendant containing the approved designs and implementation plans.
 - Produces: a clean, isolated `codex/phase-3-5-integration` worktree ready for the Phase merges.
 
-- [ ] **Step 1: Invoke the required worktree skill**
+- [x] **Step 1: Invoke the required worktree skill**
 
 Use `superpowers:using-git-worktrees` to verify that the current Codex task is already isolated. Do not create or switch branches, and do not continue in the original working copy. If the skill reports that the task is not isolated, stop and create a dedicated Codex worktree for the existing `codex/phase-3-5-integration` branch.
 
-- [ ] **Step 2: Verify the dedicated integration worktree**
+- [x] **Step 2: Verify the dedicated integration worktree**
 
 Run from the Git repository root in that worktree:
 
@@ -96,7 +96,7 @@ Expected: branch is exactly `codex/phase-3-5-integration`, status is empty, and 
 - Consumes: `codex/phase-3-5-integration` containing the approved design documents and implementation plans.
 - Produces: `codex/phase-3-5-integration` history containing `27db3f6` and `780dd05`, with Phase 5 tests passing before Phase 3 is introduced.
 
-- [ ] **Step 1: Verify the execution preconditions**
+- [x] **Step 1: Verify the execution preconditions**
 
 Run:
 
@@ -109,7 +109,7 @@ git merge-base --is-ancestor 780dd05 codex/phase-5
 
 Expected: the isolated worktree is on `codex/phase-3-5-integration`, `git status --short` is empty, and both ancestry commands exit 0.
 
-- [ ] **Step 2: Merge the published Phase 5 history**
+- [x] **Step 2: Merge the published Phase 5 history**
 
 Run:
 
@@ -119,7 +119,7 @@ git merge --no-edit codex/phase-5
 
 Expected: a merge commit is created because `codex/phase-3-5-integration` already contains the approved design and plan commits; no published Phase branch is rewritten.
 
-- [ ] **Step 3: Install the merged development dependencies**
+- [x] **Step 3: Install the merged development dependencies**
 
 Run from `perfwatch/`:
 
@@ -130,7 +130,7 @@ npm --prefix ui/dashboard ci
 
 Expected: both commands exit 0.
 
-- [ ] **Step 4: Verify the Phase 5 Python and frontend baseline**
+- [x] **Step 4: Verify the Phase 5 Python and frontend baseline**
 
 Run:
 
@@ -142,7 +142,7 @@ npm --prefix ui/dashboard run build
 
 Expected: pytest, Vitest, TypeScript, and Vite all pass. If this baseline fails, stop and diagnose the Phase 5 failure before merging Phase 3.
 
-- [ ] **Step 5: Verify the Phase 5 native baseline**
+- [x] **Step 5: Verify the Phase 5 native baseline**
 
 Run:
 
@@ -153,6 +153,23 @@ ctest --test-dir build --output-on-failure -C Release
 ```
 
 Expected: CMake configure/build and all CTest cases pass.
+
+**Execution note (2026-08-19):**
+
+- To preserve the `AGENTS.md` stage order, Step 2 was started with
+  `git merge --no-commit --no-ff codex/phase-5`. An external operation later
+  created and pushed merge commit `65dd259` with parents `0026d50` and
+  `780dd05` before the planned Review and Commit checkpoints.
+- The published merge commit will not be amended. The owner approved a
+  non-empty process-note follow-up commit; Step 6 remains open until that
+  change is reviewed, committed, and the baseline evidence is recorded.
+- After the default Vitest fork workers timed out during startup, the owner
+  approved `test.fileParallelism: false`. Fresh validation passed 16 Python
+  tests, 20 frontend tests, the TypeScript/Vite build, CMake configure and
+  Release build, and 1 CTest case.
+- CMake required Developer PowerShell to detect MSVC. It did not discover
+  `pybind11`, so the optional `perfwatch_native` module was skipped; the core
+  C++ library and test executable built successfully.
 
 - [ ] **Step 6: Record the baseline commit**
 
@@ -200,7 +217,7 @@ apply_retention_policy(older_than_timestamp_ms: int) -> dict[str, int]
 close() -> None
 ```
 
-- [ ] **Step 1: Start the Phase 3 merge without committing**
+- [x] **Step 1: Start the Phase 3 merge without committing**
 
 Run:
 
@@ -211,7 +228,7 @@ git diff --name-only --diff-filter=U
 
 Expected: Git stops for conflicts. The unresolved list is limited to the audited overlap: roadmap, testing strategy, repository, writer, and writer tests.
 
-- [ ] **Step 2: Use Phase 3 as the starting point for the three persistence conflicts**
+- [x] **Step 2: Use Phase 3 as the starting point for the three persistence conflicts**
 
 Run:
 
@@ -225,7 +242,7 @@ git checkout --ours -- perfwatch/docs/testing_strategy.md
 
 Expected: the implementation/test files contain Phase 3 behavior; documentation remains temporarily at Phase 5 wording for a focused follow-up task.
 
-- [ ] **Step 3: Run the Phase 4/5 tests to prove the Phase 3-only interface is insufficient**
+- [x] **Step 3: Run the Phase 4/5 tests to prove the Phase 3-only interface is insufficient**
 
 Run:
 
@@ -235,7 +252,7 @@ python -m pytest python/tests/test_api.py python/tests/test_service.py -v
 
 Expected: FAIL because the Phase 3 repository lacks `initialize`, `get_recent_metrics`, `get_top_processes`, or `close`.
 
-- [ ] **Step 4: Add a rollback regression test before changing the writer**
+- [x] **Step 4: Add a rollback regression test before changing the writer**
 
 Add to `perfwatch/python/tests/test_sqlite_writer.py`:
 
@@ -261,7 +278,7 @@ def test_sqlite_writer_rolls_back_snapshot_batch_on_invalid_process(tmp_path) ->
     assert process_count == 0
 ```
 
-- [ ] **Step 5: Run the rollback test to establish its result against Phase 3**
+- [x] **Step 5: Run the rollback test to establish its result against Phase 3**
 
 Run:
 
@@ -271,7 +288,7 @@ python -m pytest python/tests/test_sqlite_writer.py::test_sqlite_writer_rolls_ba
 
 Expected: PASS. This test records the Phase 3 transaction guarantee so later query additions cannot regress it.
 
-- [ ] **Step 6: Add the Phase 5 dashboard query test**
+- [x] **Step 6: Add the Phase 5 dashboard query test**
 
 Add to `perfwatch/python/tests/test_sqlite_writer.py`:
 
@@ -294,7 +311,7 @@ def test_sqlite_writer_fetches_dashboard_metrics_and_top_processes(tmp_path) -> 
     assert [process["name"] for process in processes] == ["latest"]
 ```
 
-- [ ] **Step 7: Run the dashboard query test to verify it fails**
+- [x] **Step 7: Run the dashboard query test to verify it fails**
 
 Run:
 
@@ -304,7 +321,7 @@ python -m pytest python/tests/test_sqlite_writer.py::test_sqlite_writer_fetches_
 
 Expected: FAIL with missing `fetch_recent_metrics` or `fetch_top_processes`.
 
-- [ ] **Step 8: Add the Phase 5 query methods to the Phase 3 writer**
+- [x] **Step 8: Add the Phase 5 query methods to the Phase 3 writer**
 
 Add `fetch_recent_metrics`, `fetch_top_processes`, `close`, and `_metric_from_row` to `SQLiteWriter`. Copy their SQL and row-shaping behavior from commit `780dd05` without changing the Phase 3 insertion/query/retention methods. The required public behavior is:
 
@@ -404,7 +421,7 @@ def _metric_from_row(row: sqlite3.Row) -> dict[str, Any]:
 
 Keep this nested response shape exactly. Do not return database `id` fields.
 
-- [ ] **Step 9: Expand the Phase 3 repository with the Phase 5 service interface**
+- [x] **Step 9: Expand the Phase 3 repository with the Phase 5 service interface**
 
 Add these exact methods to `SnapshotRepository`; keep the existing Phase 3 methods unchanged:
 
@@ -446,7 +463,7 @@ def add_event(
     )
 ```
 
-- [ ] **Step 10: Run the combined persistence, service, and API tests**
+- [x] **Step 10: Run the combined persistence, service, and API tests**
 
 Run:
 
@@ -456,7 +473,24 @@ python -m pytest python/tests/test_sqlite_writer.py python/tests/test_service.py
 
 Expected: PASS, including rollback, retention, dashboard history, top-process queries, service sampling, and WebSocket/API behavior.
 
-- [ ] **Step 11: Resolve and stage the merge**
+**Execution note (2026-08-20):**
+
+- The Codex shell could not update the linked-worktree `ORIG_HEAD` because the
+  shared Git metadata was not writable. Per `AGENTS.md`, execution stopped and
+  the owner ran the merge and conflict-baseline checkout commands manually.
+- The unresolved list matched the five audited paths exactly. The three
+  persistence files started from Phase 3, while roadmap and testing-strategy
+  wording remained at the Phase 5 baseline for Task 3.
+- The Phase 3-only service/API run failed 9 tests on the missing service
+  interface. The rollback characterization passed, the dashboard query test
+  failed on the missing writer method, and both became green after the minimal
+  writer/repository integration.
+- Fresh combined validation passed all 20 persistence, service, and API tests
+  in 3.50 seconds. One existing Starlette/httpx deprecation warning remained.
+  Merge staging completed with no unresolved paths or whitespace errors.
+  Review and commit remain pending Step 12.
+
+- [x] **Step 11: Resolve and stage the merge**
 
 Run:
 
@@ -486,6 +520,225 @@ Expected: one merge commit with both parents and the reviewed persistence resolu
 
 ---
 
+### Task 2A: Synchronize Current `main` Before Task 3
+
+**Files:**
+
+- Merge from: `origin/main`
+- Resolve with the integration version: `perfwatch/python/src/perfwatch/storage/repository.py`
+- Resolve with the integration version: `perfwatch/python/src/perfwatch/storage/sqlite_writer.py`
+- Resolve with the integration version: `perfwatch/python/tests/test_sqlite_writer.py`
+- Verify the automatic merge: `perfwatch/docs/roadmap.md`
+- Verify the automatic merge: `perfwatch/docs/testing_strategy.md`
+- Verify the automatic merge: `perfwatch/ui/dashboard/vite.config.ts`
+- Update during the process-note stage: `perfwatch/docs/superpowers/plans/phase-3-5-integration.md`
+
+**Interfaces:**
+
+- Consumes: merge commit `f4ea806`, the owner's freshly fetched `origin/main`,
+  and a worktree whose only permitted pre-existing modification is this plan.
+- Produces: one merge commit on `codex/phase-3-5-integration` that contains the
+  latest `origin/main`, preserves the complete Task 2 persistence/service
+  interface, keeps Vitest restricted to a single worker, and makes pull
+  request #8 conflict-free before Task 3 begins.
+
+Final resolution policy:
+
+```text
+repository.py = f4ea806, including all Phase 3 write/query/retention and Phase 5 service methods
+sqlite_writer.py = f4ea806, including transaction rollback, dashboard queries, retention, and row shaping
+test_sqlite_writer.py = f4ea806, including Phase 3 coverage plus rollback and dashboard-query regressions
+roadmap.md = keep Git's automatic merge and review it for current-main status accuracy
+testing_strategy.md = keep Git's automatic merge and defer final integrated wording to Task 3
+vite.config.ts = keep Git's automatic merge and verify test.fileParallelism remains false
+```
+
+Do not use a repository-wide `--ours` or `--theirs`. If the freshly fetched
+merge reports a different unresolved path set, stop at **Implement visibly**
+and return to **Plan only** before resolving any additional file.
+
+- [x] **Plan only: Refresh the conflict audit without starting the merge**
+
+The owner runs from the Git repository root:
+
+```powershell
+git fetch origin main
+git log -1 --format="%H %s" origin/main
+git status --short
+```
+
+Expected: fetch exits 0, the owner records the exact `origin/main` commit, and
+status contains only
+`perfwatch/docs/superpowers/plans/phase-3-5-integration.md`. The agent then
+runs read-only comparisons against that exact commit and confirms that the
+expected unresolved overlap remains limited to the three persistence paths
+listed below, with automatic merge candidates reserved for later review.
+Do not start the merge during this stage.
+
+**Planning evidence (2026-08-20):**
+
+- The owner fetched `origin/main` at
+  `02a6d9046c6ba9dc330b9ccc4e45caa72cf68ad9`.
+- `f4ea806` and current `origin/main` are not ancestors of each other. Their
+  merge has three merge bases: `0026d50`, `780dd05`, and `8298574`.
+- The Codex shell could not create the linked-worktree `ORIG_HEAD.lock`, so
+  the owner started the merge manually as required by `AGENTS.md`.
+- The actual unresolved set contains only the three persistence paths below.
+  Roadmap and testing strategy merged automatically, and Vite configuration
+  did not require conflict resolution. This revised plan preserves those
+  automatic results for later scoped review.
+
+- [x] **Implement visibly: Merge current `main` and resolve only the audited conflicts**
+
+Run from the Git repository root:
+
+```powershell
+git merge --no-commit --no-ff origin/main
+git diff --name-only --diff-filter=U
+```
+
+Expected: Git stops before commit and the unresolved list is exactly:
+
+```text
+perfwatch/python/src/perfwatch/storage/repository.py
+perfwatch/python/src/perfwatch/storage/sqlite_writer.py
+perfwatch/python/tests/test_sqlite_writer.py
+```
+
+Resolve those paths with the approved policy:
+
+```powershell
+git checkout --ours -- perfwatch/python/src/perfwatch/storage/repository.py
+git checkout --ours -- perfwatch/python/src/perfwatch/storage/sqlite_writer.py
+git checkout --ours -- perfwatch/python/tests/test_sqlite_writer.py
+git add -- perfwatch/python/src/perfwatch/storage/repository.py
+git add -- perfwatch/python/src/perfwatch/storage/sqlite_writer.py
+git add -- perfwatch/python/tests/test_sqlite_writer.py
+git diff --name-only --diff-filter=U
+```
+
+Expected: no unresolved paths remain. Do not edit automatically merged files,
+including roadmap, testing strategy, and Vite configuration; do not refactor
+persistence code or change test behavior during this stage.
+
+- [x] **Validate only: Run the conflict-scoped regression and integrity gate**
+
+Run from `perfwatch/`:
+
+```powershell
+python -m pytest python/tests/test_sqlite_writer.py python/tests/test_service.py python/tests/test_api.py -v
+npm --prefix ui/dashboard test
+```
+
+Expected: all selected Python tests pass; Vitest passes with its existing
+single-worker configuration. Then run from the Git repository root:
+
+```powershell
+if ((git rev-parse MERGE_HEAD) -ne (git rev-parse origin/main)) {
+    throw "MERGE_HEAD does not match the audited origin/main"
+}
+git merge-base --is-ancestor 8298574 HEAD
+git merge-base --is-ancestor 27db3f6 HEAD
+git merge-base --is-ancestor 780dd05 HEAD
+rg -n "<<<<<<<|=======|>>>>>>>" perfwatch/python perfwatch/ui perfwatch/docs --glob "!**/superpowers/plans/**"
+git diff --cached --check
+```
+
+Expected: `MERGE_HEAD` matches the audited `origin/main`, all three Phase
+ancestry checks exit 0, ripgrep finds no conflict markers, and the staged
+merge has no whitespace errors. Do not run the complete Python, CMake, or
+frontend build gate here; those remain Task 3 responsibilities.
+
+**Implementation and validation evidence (2026-08-20):**
+
+- The owner started the merge after the Codex shell was denied permission to
+  create the linked-worktree `ORIG_HEAD.lock`. Git reported conflicts only in
+  `repository.py`, `sqlite_writer.py`, and `test_sqlite_writer.py`; this was
+  narrower than the original five-file GitHub conflict report.
+- The three persistence conflicts were resolved with the `f4ea806` versions.
+  The Codex shell was also denied permission to create `index.lock`, so the
+  owner performed the three approved checkouts and staging commands. Fresh
+  checks showed no unresolved index entries and confirmed `MERGE_HEAD` equals
+  `02a6d9046c6ba9dc330b9ccc4e45caa72cf68ad9`.
+- Conflict-scoped Python validation passed all 20 persistence, service, and
+  API tests in 6.29 seconds. One existing Starlette/httpx deprecation warning
+  remained.
+- The first Codex Vitest run stalled after startup and was stopped under the
+  environment/tooling failure rule. The owner confirmed Node.js 26.3.0, npm
+  11.16.0, the installed Vitest entry point, and `fileParallelism: false`;
+  the owner's run passed 20 tests across 4 files in 39.46 seconds. The
+  explicitly authorized Codex rerun then passed the same 20 tests across 4
+  files in 19.62 seconds. This is local Node.js 26 evidence, not Node.js 22
+  validation.
+- Ancestry checks passed for `8298574`, `27db3f6`, and `780dd05`. The first
+  conflict-marker scan matched literal commands inside plan files because its
+  glob was not recursive from the repository root. After returning to Plan
+  only and changing the exclusion to `!**/superpowers/plans/**`, the scan
+  found no markers outside plan files. `git diff --cached --check` passed.
+- Git's automatic merge currently contributes root `README.md`, the dated
+  Phase 3-5 integration plan, and `python/pyproject.toml`. Roadmap, testing
+  strategy, and Vite configuration required no final staged content change;
+  their current results remain subject to the scoped Git diff review.
+
+- [x] **Update the process note: Record the main synchronization evidence**
+
+Update this task with the exact fetched `origin/main` commit, unresolved path
+list, per-file resolution used, Python/Vitest results, ancestry results, and
+any existing warnings. Stage the plan together with the resolved merge:
+
+```powershell
+git add -- perfwatch/docs/superpowers/plans/phase-3-5-integration.md
+git diff --cached --check
+```
+
+Expected: the process note contains observed results rather than expected
+results, and the whitespace check exits 0.
+
+- [ ] **Review Git diff: Review the complete merge result**
+
+Run from the Git repository root:
+
+```powershell
+git status --short
+git diff --name-only --diff-filter=U
+git diff --cached --stat
+git diff --cached
+git diff --cached --check
+```
+
+Expected: no unresolved files or unstaged implementation changes; the three
+conflict resolutions match the approved policy; roadmap, testing strategy,
+and Vite configuration retain correct automatic merge results; other
+automatic merges preserve both current-main changes and integration-only
+plans/rules; the plan is the only intentional process-note addition.
+
+- [ ] **Commit: Create and publish the main-synchronization merge commit**
+
+Run from the Git repository root:
+
+```powershell
+git commit -m "merge: synchronize main before integration gate"
+git show --no-patch --format="%H%n%P%n%s" HEAD
+git merge-base --is-ancestor origin/main HEAD
+git status --short
+```
+
+Expected: one merge commit whose first parent is the Task 2 integration
+history and whose second parent is the exact fetched `origin/main`, the
+ancestry check exits 0, and status is clean. The owner then publishes and
+verifies pull request #8:
+
+```powershell
+git push origin codex/phase-3-5-integration
+gh pr view 8 --json headRefOid,mergeable,mergeStateStatus
+```
+
+Expected: `headRefOid` is the new merge commit, `mergeable` is `MERGEABLE`,
+and GitHub no longer reports file conflicts. Do not merge the pull request;
+stop and wait for approval to begin Task 3.
+
+---
+
 ### Task 3: Reconcile Project Documentation and Run the Full Integration Gate
 
 **Files:**
@@ -507,7 +760,7 @@ Use these exact facts throughout the five documents:
 
 ```text
 - Phase 3 persistence, Phase 4 service loop, and Phase 5 dashboard are integrated on codex/phase-3-5-integration.
-- main remains the Phase 2 baseline until the integration pull request is merged.
+- main contains the separately merged Phase 3, Phase 4, and Phase 5 histories; the integration conflict-resolution and documentation commits remain on codex/phase-3-5-integration until the integration pull request is merged.
 - Linux support is fixture/parser-only; live Linux, Windows PDH/WMI, GPU, overlay, and installers remain incomplete.
 - Automated tests use deterministic mocks and fixtures and do not validate physical sensors.
 - SQLite supports single and batch snapshot writes, events, history queries, top-process queries, indexes, and retention cleanup.
@@ -664,3 +917,7 @@ Do not begin the CI/CD implementation plan until all of the following are true:
 - Revalidation passed 11 branch-plan assertions, the placeholder scan, and `git diff --check`.
 - Placeholder and trailing-whitespace scans passed.
 - No merge or implementation test was run while writing this plan; all executable validation commands are assigned to implementation tasks above.
+- Added the environment and tooling failure stop rule to `perfwatch/AGENTS.md`
+  on 2026-08-20 before Task 2. Validation confirmed every required stop,
+  manual-troubleshooting, and explicit-resume clause; `git diff --check` passed,
+  and no program tests were run for this process-only change.

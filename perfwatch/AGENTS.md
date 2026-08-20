@@ -58,6 +58,30 @@ After every two or three commands, pause and summarize the current state.
 If any command fails, stop and ask for confirmation before changing strategy,
 unless the fix is limited to the current workspace and clearly safe.
 
+## Environment and Tooling Failure Stop Rule
+
+If a failure is unrelated to the program code, stop the current stage
+immediately. This includes an environment that is not loaded correctly,
+permission errors, dependency or tool startup timeouts, an undiscoverable
+compiler or SDK, and a shell environment mismatch.
+
+After such a failure:
+
+1. Do not retry automatically or run any diagnostic command.
+2. Do not switch shells, directories, flags, or tools; install dependencies;
+   create alternative build or test directories; or collect additional logs.
+3. Report the blocked command, the exact error, and why it appears to be an
+   environment or tooling problem rather than a program-code problem.
+4. Provide a concise manual troubleshooting plan with the exact PowerShell
+   commands, working directory, and expected results for the owner to use.
+5. Wait until the owner reports that the issue is resolved and explicitly
+   authorizes work to resume.
+6. On resume, rerun only the originally blocked command. Continue the stage
+   only after that command succeeds.
+
+If it is unclear whether a failure comes from the program code or the
+environment, treat it as an environment failure and stop.
+
 ## Required Pipeline
 
 Do not complete an entire work item in one pass. Use the

@@ -1,6 +1,8 @@
 import sqlite3
 from copy import deepcopy
 
+import pytest
+
 from perfwatch.collectors.mock import get_mock_snapshot
 from perfwatch.storage.sqlite_writer import SQLiteWriter
 
@@ -82,6 +84,42 @@ def test_sqlite_writer_inserts_snapshot_batch(tmp_path) -> None:
 
     assert system_count == 2
     assert process_names == ["first_process", "second_process"]
+
+
+def test_sqlite_writer_rolls_back_snapshot_batch_on_invalid_process(tmp_path) -> None:
+    database_path = tmp_path / "perfwatch.sqlite3"
+    writer = SQLiteWriter(database_path)
+    valid = snapshot_at(1000, "valid")
+    invalid = snapshot_at(2000, "invalid")
+    invalid["top_processes"][0]["rss_bytes"] = "not-an-integer"
+
+    with pytest.raises(ValueError):
+        writer.insert_snapshots([valid, invalid])
+
+    with sqlite3.connect(database_path) as connection:
+        system_count = connection.execute("SELECT COUNT(*) FROM samples_system").fetchone()[0]
+        process_count = connection.execute("SELECT COUNT(*) FROM samples_process").fetchone()[0]
+
+    assert system_count == 0
+    assert process_count == 0
+
+
+def test_sqlite_writer_fetches_dashboard_metrics_and_top_processes(tmp_path) -> None:
+    database_path = tmp_path / "perfwatch.sqlite3"
+    writer = SQLiteWriter(database_path)
+    writer.insert_snapshots(
+        [
+            snapshot_at(1000, "old"),
+            snapshot_at(2000, "latest"),
+        ]
+    )
+
+    metrics = writer.fetch_recent_metrics(limit=1)
+    processes = writer.fetch_top_processes(limit=1)
+
+    assert [metric["timestamp_ms"] for metric in metrics] == [2000]
+    assert metrics[0]["cpu"]["usage_percent"] == 42.5
+    assert [process["name"] for process in processes] == ["latest"]
 
 
 def test_sqlite_writer_inserts_process_samples(tmp_path) -> None:
@@ -231,27 +269,5 @@ def test_sqlite_writer_handles_missing_optional_values(tmp_path) -> None:
             """
         ).fetchone()
 
-    assert system_count == 1
-    assert process_count == 1
-
-
-def test_sqlite_writer_queries_metrics_processes_and_events(tmp_path) -> None:
-    database_path = tmp_path / "perfwatch.sqlite3"
-    writer = SQLiteWriter(database_path)
-    snapshot = get_mock_snapshot()
-
-    writer.insert_snapshot(snapshot)
-    event_id = writer.insert_event(
-        timestamp_ms=snapshot["timestamp_ms"],
-        level="error",
-        source="collector",
-        message="test error",
-    )
-
-    metrics = writer.fetch_recent_metrics(limit=1)
-    processes = writer.fetch_top_processes(limit=1)
-
-    assert event_id == 1
-    assert metrics[0]["cpu"]["usage_percent"] == 42.5
-    assert metrics[0]["battery"]["available"] is True
-    assert processes[0]["name"] == "mock_process"
+    assert system_row == (None, None, None)
+    assert process_row == (1234, "partial_process", None, None)
