@@ -681,3 +681,7 @@ Do not begin the CI/CD implementation plan until all of the following are true:
 - Revalidation passed 11 branch-plan assertions, the placeholder scan, and `git diff --check`.
 - Placeholder and trailing-whitespace scans passed.
 - No merge or implementation test was run while writing this plan; all executable validation commands are assigned to implementation tasks above.
+- Added the environment and tooling failure stop rule to `perfwatch/AGENTS.md`
+  on 2026-08-20 before Task 2. Validation confirmed every required stop,
+  manual-troubleshooting, and explicit-resume clause; `git diff --check` passed,
+  and no program tests were run for this process-only change.
