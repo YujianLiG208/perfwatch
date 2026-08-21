@@ -748,15 +748,17 @@ stop and wait for approval to begin Task 3.
 - Modify: `perfwatch/docs/data_model.md`
 - Modify: `perfwatch/docs/roadmap.md`
 - Modify: `perfwatch/docs/testing_strategy.md`
+- Modify: `perfwatch/python/pyproject.toml`
+- Update during the process-note stage: `perfwatch/docs/superpowers/plans/phase-3-5-integration.md`
 
 **Interfaces:**
 
 - Consumes: the merged persistence/service/dashboard behavior from Task 2.
-- Produces: accurate project documentation and a fully validated integration commit ready for CI/CD implementation.
+- Produces: accurate project documentation, an explicit stable Ruff rule baseline, and a fully validated integration commit ready for CI/CD implementation.
 
-- [ ] **Step 1: Update the integrated status text**
+- [x] **Plan only: Audit the five documents and define the scoped reconciliation**
 
-Use these exact facts throughout the five documents:
+Use these exact facts consistently throughout the five documents:
 
 ```text
 - Phase 3 persistence, Phase 4 service loop, and Phase 5 dashboard are integrated on codex/phase-3-5-integration.
@@ -768,7 +770,78 @@ Use these exact facts throughout the five documents:
 
 Do not copy the pre-existing uncommitted README from another worktree without owner confirmation.
 
-- [ ] **Step 2: Run the complete Python quality and test gate**
+Apply the facts with these file-specific boundaries:
+
+```text
+README.md
+- Replace the obsolete statement that the phases are not merged.
+- Preserve the historical Phase branch names while identifying the integration branch as the combined baseline.
+- Remove the instruction to switch to codex/phase-5 and rename the local-run section for the integrated baseline.
+- Describe the API and dashboard as available in the current integration checkout, not only on old Phase branches.
+
+docs/architecture.md
+- State that Phase 3 persistence, Phase 4 service, and Phase 5 dashboard now form one integrated path.
+- Expand SQLite capabilities to single/batch writes, events, time-window history, dashboard history, top-process queries, indexes, and retention.
+- Preserve the existing API, service lifecycle, dashboard behavior, and hardware limitations.
+
+docs/data_model.md
+- Describe the SQLite model as the persistence source consumed by the integrated service and dashboard.
+- Record timestamp indexes, single/batch snapshots, events, history windows, dashboard metric shaping, top-process queries, and retention.
+- Preserve NULL handling and the distinction between estimated scores and measured watts.
+
+docs/roadmap.md
+- Keep Phases 1-5 completed and Phases 6-9 pending.
+- Add that Phases 3-5 are integrated on codex/phase-3-5-integration while the integration PR remains separate from main.
+- Preserve the explicit lack of live Linux/Windows/GPU/overlay/packaging implementation.
+
+docs/testing_strategy.md
+- Add Phase 3 batch, rollback, query-window, index, retention, and dashboard-query coverage.
+- State that mocks and fixtures do not validate physical sensors or live Linux collection.
+- Relabel the existing 20 frontend/16 Python/1 C++ numbers as the earlier Phase 5 baseline rather than the Task 3 result.
+- Do not predict Task 3 pass counts; record fresh results only in this plan during Update process note.
+```
+
+**Planning evidence (2026-08-20):**
+
+- Task 2A merge commit `4c57329` is local and remote HEAD; the worktree is
+  clean and the branch is synchronized with
+  `origin/codex/phase-3-5-integration`.
+- `perfwatch/README.md` still directs users to `codex/phase-5` and says the
+  persistence and service/dashboard histories are separate. The other four
+  documents describe individual Phase behavior but do not state the combined
+  Phase 3-5 baseline consistently.
+- The former conflict-marker glob was already proven insufficient on Windows.
+  Task 3 therefore uses `!**/superpowers/plans/**` from the repository root.
+- No implementation file, target documentation file, dependency, generated
+  output, or test result changed during this planning checkpoint.
+
+- [x] **Implement visibly: Reconcile only the five project documents**
+
+Edit the five files listed above in small groups. Do not modify Python, C++,
+frontend, build, dependency, CI/CD, or hardware implementation files. After
+each logical group, inspect only that group's diff; do not run the full test
+or build gate during this stage.
+
+Expected: the five documents contain the exact integrated facts and retain
+their existing useful setup, API, schema, roadmap, and testing details. The
+plan file is the only additional process change from this documentation pass;
+the later evidence records the separately approved Ruff correction.
+
+**Implementation evidence (2026-08-20):**
+
+- The five documents were reconciled in three visible groups without changing
+  Python, C++, frontend, build, dependency, CI/CD, or hardware behavior.
+- The first Ruff validation exposed 14 diagnostics in historical Phase 3-5
+  code. Ruff `0.16.0` had expanded its implicit default rule set, while the
+  project left `lint.select` unspecified and installed Ruff without a version
+  cap. The owner approved the minimal root-cause fix: add
+  `select = ["E4", "E7", "E9", "F"]` under `[tool.ruff.lint]` in
+  `python/pyproject.toml`. No source or test file was auto-fixed.
+- Scoped diffs and `git diff --check` passed after both the documentation and
+  Ruff configuration changes. The only modified paths were the five target
+  documents, `python/pyproject.toml`, and this plan.
+
+- [x] **Validate only: Run the complete integration gate**
 
 Run from `perfwatch/`:
 
@@ -779,7 +852,7 @@ python -m pytest python/tests
 
 Expected: both commands pass with zero errors and zero failed tests.
 
-- [ ] **Step 3: Run the complete native gate**
+Then run the complete native gate:
 
 Run:
 
@@ -791,7 +864,7 @@ ctest --test-dir build --output-on-failure -C Release
 
 Expected: configure/build pass and CTest reports zero failures.
 
-- [ ] **Step 4: Run the complete frontend gate**
+Then run the complete frontend gate:
 
 Run:
 
@@ -803,7 +876,7 @@ npm --prefix ui/dashboard run build
 
 Expected: locked installation, Vitest, TypeScript, and Vite all pass.
 
-- [ ] **Step 5: Verify ancestry and repository honesty**
+Finally verify ancestry and repository honesty from the Git repository root:
 
 Run:
 
@@ -811,35 +884,102 @@ Run:
 git merge-base --is-ancestor 8298574 HEAD
 git merge-base --is-ancestor 27db3f6 HEAD
 git merge-base --is-ancestor 780dd05 HEAD
-rg -n "<<<<<<<|=======|>>>>>>>" perfwatch/python perfwatch/cpp perfwatch/ui perfwatch/docs --glob "!superpowers/plans/**"
+rg -n "<<<<<<<|=======|>>>>>>>" perfwatch/python perfwatch/cpp perfwatch/ui perfwatch/docs --glob "!**/superpowers/plans/**"
 git status --short
 ```
 
-Expected: all ancestry commands exit 0, ripgrep finds no conflict markers, and only the five scoped documentation files are modified.
+Expected: all ancestry commands exit 0, ripgrep finds no conflict markers,
+and only the five scoped project documents, Ruff configuration, and this plan
+are modified.
 
-- [ ] **Step 6: Review and commit the documentation reconciliation**
+**Validation evidence (2026-08-20):**
 
-Run:
+- Python `3.12.13` with Ruff `0.16.3` passed the original
+  `python -m ruff check python/src python/tests` command after the explicit
+  rule baseline was added. Pytest passed all 25 tests in 3.89 seconds with one
+  existing Starlette/httpx deprecation warning.
+- CMake `4.2.3` configured the Visual Studio 18 2026 generator with Windows SDK
+  `10.0.28000.0`. CMake did not find `pybind11`, so the optional
+  `perfwatch_native` module was not built. The Codex shell twice failed in
+  MSBuild `FileTracker` with `E_ACCESSDENIED`; the owner built successfully in
+  Developer PowerShell with MSBuild `18.6.3+84d3e95b4` and explicitly
+  authorized that output as the Release-build evidence. CTest then passed its
+  single test in 0.27 seconds.
+- Node.js `26.3.0` and npm `11.16.0` installed 154 locked packages. Vitest
+  `4.1.8`, using the existing single-worker configuration, passed 20 tests in
+  4 files in 51.03 seconds. Vite `8.0.16` transformed 583 modules and completed
+  the production build in 4.46 seconds.
+- Vite retained one non-blocking bundle advisory: the main JavaScript chunk was
+  539.07 kB after minification and 162.46 kB after gzip, above the 500 kB
+  warning threshold.
+- Ancestry checks for `8298574`, `27db3f6`, and `780dd05` all exited 0. The
+  recursive conflict-marker scan found no matches outside plan files, and
+  `git status --short` listed exactly the five target documents,
+  `python/pyproject.toml`, and this plan. No CI/CD implementation was started.
+
+- [x] **Update the process note: Record the full integration evidence**
+
+Update this task with the observed Python/Ruff, native, frontend, ancestry,
+and conflict-marker results. Record actual Python, Node.js, npm, CMake, and
+compiler versions when available; test counts and elapsed times; warnings;
+whether optional pybind11 bindings were built; and any Vite advisory. Do not
+claim Node.js 22 validation if the actual environment uses a newer version.
+
+The owner stages exactly the five target documents, Ruff configuration, and
+this plan because the Codex shell cannot create the linked-worktree
+`index.lock`:
 
 ```powershell
-git add perfwatch/README.md perfwatch/docs/architecture.md perfwatch/docs/data_model.md perfwatch/docs/roadmap.md perfwatch/docs/testing_strategy.md
+git add -- perfwatch/README.md
+git add -- perfwatch/docs/architecture.md
+git add -- perfwatch/docs/data_model.md
+git add -- perfwatch/docs/roadmap.md
+git add -- perfwatch/docs/testing_strategy.md
+git add -- perfwatch/python/pyproject.toml
+git add -- perfwatch/docs/superpowers/plans/phase-3-5-integration.md
 git diff --cached --check
-git diff --cached
-git commit -m "docs: describe integrated phase 3 through 5 baseline"
 ```
 
-Expected: one documentation-only commit.
+Expected: the seven scoped documentation/configuration/process files are staged, no other
+path is staged or modified, and the whitespace check exits 0.
 
-- [ ] **Step 7: Record the final integration evidence**
+- [ ] **Review Git diff: Review the complete integration-gate diff**
 
-Run:
+Run from the Git repository root:
 
 ```powershell
-git log --graph --decorate --oneline -12
 git status --short
+git diff --name-only
+git diff --cached --name-status
+git diff --cached --stat
+git diff --cached
+git diff --cached --check
 ```
 
-Expected: the graph visibly contains both Phase branches, the documentation commit is HEAD, and the worktree is clean.
+Expected: there are no unstaged changes; the complete staged diff contains
+only the five target documents, Ruff configuration, and this plan; all
+statements agree with the validated repository state. Use
+`superpowers:requesting-code-review` for one independent read-only review
+before approving the commit.
+
+- [ ] **Commit: Create the integration-gate commit**
+
+The owner runs from the Git repository root because the Codex shell cannot
+write the shared linked-worktree metadata:
+
+```powershell
+git commit -m "chore: finalize phase 3 through 5 integration gate"
+git show --no-patch --format="%H%n%P%n%s" HEAD
+git merge-base --is-ancestor 4c57329 HEAD
+git status --short
+git log --graph --decorate --oneline -12
+```
+
+Expected: one scoped documentation and Ruff-configuration commit with
+`4c57329` as its first-parent ancestor, the requested subject, and a clean
+worktree. The graph visibly contains the Task 2A main-synchronization merge and
+the Task 3 integration-gate commit. Stop before Task 4 and do not begin CI/CD
+implementation.
 
 ---
 

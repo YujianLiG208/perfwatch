@@ -5,7 +5,10 @@ layer, Python orchestration and persistence, a FastAPI service, and a React dash
 
 ## Current Status
 
-Implementation has reached Phase 5, but the phases are not all merged into `main`.
+Phase 3 persistence, the Phase 4 service loop, and the Phase 5 dashboard are
+integrated on `codex/phase-3-5-integration`. `main` contains their separately
+merged histories; the integration conflict-resolution and documentation commits
+remain on the integration branch until its pull request is merged.
 
 | Phase | Branch | Implemented scope |
 | --- | --- | --- |
@@ -15,8 +18,9 @@ Implementation has reached Phase 5, but the phases are not all merged into `main
 | 4 | `codex/phase-4-service-loop` | Background sampling loop, SQLite persistence, API history/process queries, WebSocket streaming, configuration, and graceful shutdown. |
 | 5 | `codex/phase-5` | Vite/React/TypeScript dashboard with current metrics, history charts, top processes, WebSocket updates, and HTTP fallback. |
 
-Phase 3 and Phase 4 were developed from Phase 2 as separate branches. Consequently, the dedicated
-Phase 3 persistence hardening is not part of the Phase 4/5 branch history.
+The branch names above identify the historical source branches. The integration
+branch combines their behavior into one baseline: the hardened Phase 3
+writer/repository, the Phase 4 service/API, and the Phase 5 dashboard.
 
 ## Implemented Architecture
 
@@ -25,17 +29,13 @@ Phase 3 persistence hardening is not part of the Phase 4/5 branch history.
 - **Python:** mock/native-compatible collection, simple battery and process-energy estimates,
   SQLite storage, and service orchestration.
 - **API:** `GET /health`, `GET /snapshot`, `GET /metrics/recent`, `GET /processes/top`, and
-  `WebSocket /ws/snapshot` on the Phase 4/5 branches.
+  `WebSocket /ws/snapshot` in the integrated baseline.
 - **Dashboard:** local CPU, memory, battery, package-power, process, history, and connection views
-  on the Phase 5 branch.
+  in the integrated baseline.
 
-## Run Phase 5 Locally
+## Run the Integrated Baseline Locally
 
-Switch to the latest implementation branch:
-
-```powershell
-git switch codex/phase-5
-```
+Use the current `codex/phase-3-5-integration` checkout.
 
 Set up and start the API:
 
@@ -68,7 +68,7 @@ cmake --build build --config Debug
 ctest --test-dir build --output-on-failure -C Debug
 ```
 
-On the Phase 5 branch, validate the dashboard separately:
+Validate the dashboard from the same integrated checkout:
 
 ```powershell
 cd ui\dashboard

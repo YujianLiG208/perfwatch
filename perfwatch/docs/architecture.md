@@ -1,5 +1,8 @@
 # Architecture
 
+The integration baseline combines Phase 3 persistence, the Phase 4 service, and
+the Phase 5 dashboard on `codex/phase-3-5-integration`.
+
 ## Native C++ Collector Layer
 
 The C++ layer defines simple sample structs, a `Collector` interface, and a deterministic
@@ -22,9 +25,10 @@ hardware sensors.
 
 ## SQLite Storage
 
-SQLite stores system samples, process samples, and events. The schema uses `ts_ms` timestamps and
-names estimated fields with `estimated` or `score`. The repository supports snapshot insertion,
-recent system metric queries, latest top-process queries, and service error events.
+SQLite stores system samples, process samples, and events. The schema uses `ts_ms` timestamps,
+indexes time-window lookups, and names estimated fields with `estimated` or `score`. The integrated
+repository supports single and batch snapshot insertion, event writes, recent system and process
+windows, dashboard-shaped metric history, top-process queries, and retention cleanup.
 
 ## FastAPI Service
 
@@ -50,8 +54,9 @@ Configuration remains intentionally small:
 - `PERFWATCH_DATABASE_PATH`, default `perfwatch.sqlite3`
 - `PERFWATCH_USE_MOCK_COLLECTOR`, default `false`
 
-This phase implements backend service orchestration only. It does not add real Linux, Windows, GPU,
-dashboard, overlay, or packaging functionality.
+Phase 4 itself implements backend service orchestration; in the integrated baseline its API feeds
+the Phase 5 dashboard. The baseline still does not add live Linux, Windows, or GPU collection, an
+overlay, or packaging functionality.
 
 ## Web Dashboard Layer
 
@@ -79,3 +84,6 @@ Phase 1 tests use deterministic mocks. Phase 2 adds Linux parser fixture tests w
 hardware or live operating-system files. Phase 4 service and API tests use the
 mock/native-compatible collector interface and temporary SQLite databases. Phase 5 frontend tests
 mock browser network boundaries while exercising the real data, connection, and component code.
+
+These deterministic mocks and fixtures validate integration behavior, not physical sensors or
+live operating-system collection.
