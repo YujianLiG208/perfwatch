@@ -5,6 +5,10 @@
 Python unit tests cover deterministic mock collection, simple analytics helpers, SQLite insertion,
 repository queries, event insertion, configuration, and API endpoints.
 
+Phase 3 persistence coverage includes single and batch snapshot writes, transactional rollback,
+system and process time-window queries, schema indexes, dashboard metric shaping, top-process
+selection, event writes, and retention cleanup.
+
 ## Mock Tests
 
 C++ and Python mock tests verify stable values and expected keys. This is the Phase 1 test anchor.
@@ -43,18 +47,19 @@ Phase 5 uses Vitest and React Testing Library. Tests cover:
 HTTP responses and WebSocket connections are deterministic test doubles that mirror the complete
 Phase 4 snapshot structure. No frontend test requires a running API or host hardware.
 
-The Phase 5 validation run completed with 20 frontend tests, 16 Python tests, and one C++ test
-passing. The Python suite retains an existing Starlette/httpx deprecation warning. The production
-frontend build succeeds and reports a non-blocking Vite advisory because the single Recharts bundle
-is larger than 500 kB before gzip compression.
+Before Phase 3 integration, the Phase 5 baseline validation completed with 20 frontend tests,
+16 Python tests, and one C++ test passing. That Python suite retained a Starlette/httpx deprecation
+warning. The production frontend build succeeded and reported a non-blocking Vite advisory because
+the single Recharts bundle was larger than 500 kB before gzip compression. Fresh Task 3 integration
+results are recorded in the integration plan after validation rather than predicted here.
 
 ## CI Limitations
 
-CI can validate deterministic parser and mock code paths plus build shape. It cannot validate real
-hardware sensors or runtime Linux collection. Phase 4 validates backend orchestration through the
-mock/native-compatible collector interface, and Phase 5 validates browser behavior through mocked
-network boundaries. Browser visual QA remains an additional local check rather than a hardware
-test.
+CI can validate deterministic parser and mock code paths plus build shape. Deterministic mocks and
+fixtures do not validate physical sensors or live Linux, Windows, or GPU collection. Phase 4
+validates backend orchestration through the mock/native-compatible collector interface, and Phase 5
+validates browser behavior through mocked network boundaries. Browser visual QA remains an
+additional local check rather than a hardware test.
 
 ## Future Real-Hardware Testing
 
