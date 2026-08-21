@@ -5,6 +5,8 @@
 #include <string>
 #include <unordered_map>
 
+// Future long-term plan for Linux: this parser remains fixture-only until live Linux hardware
+// and a dedicated validation environment are available.
 namespace perfwatch::platform_linux {
 
 namespace {

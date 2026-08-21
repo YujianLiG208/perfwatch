@@ -5,6 +5,8 @@
 #include <string>
 #include <string_view>
 
+// Future long-term plan for Linux: retain these fixture-tested parser contracts for a future
+// validated live Linux collector.
 namespace perfwatch::platform_linux {
 
 struct ProcCpuTimes {

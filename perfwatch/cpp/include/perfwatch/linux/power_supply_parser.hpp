@@ -4,6 +4,8 @@
 #include <string>
 #include <string_view>
 
+// Future long-term plan for Linux: retain this fixture-tested parser contract for a future
+// validated live Linux collector.
 namespace perfwatch::platform_linux {
 
 struct PowerSupplyUevent {

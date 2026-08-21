@@ -1,41 +1,59 @@
 # perfwatch
 
-perfwatch is a local performance and energy monitoring prototype. It combines a C++ collection
-layer, Python orchestration and persistence, a FastAPI service, and a React dashboard.
+perfwatch is a Windows-first local performance and energy monitoring prototype. It combines a C++
+collection layer, Python orchestration and persistence, a FastAPI service, and a React dashboard.
 
 ## Current Status
 
-Phase 3 persistence, the Phase 4 service loop, and the Phase 5 dashboard are
-integrated on `codex/phase-3-5-integration`. `main` contains their separately
-merged histories; the integration conflict-resolution and documentation commits
-remain on the integration branch until its pull request is merged.
+Phases 1-5 are integrated on `main` and form the current mock-driven baseline.
 
-| Phase | Branch | Implemented scope |
+| Phase | Status | Implemented scope |
 | --- | --- | --- |
-| 1 | `main` | Project skeleton, deterministic mock pipeline, Python/C++ boundaries, CI and development setup. |
-| 2 | `main` | Fixture-tested parsers for Linux `/proc/stat`, `/proc/meminfo`, `/proc/<pid>/stat`, and battery `uevent` data. |
-| 3 | `codex/phase-3-sqlite-persistence` | Hardened SQLite writes, batch insertion, events, recent-sample queries, indexes, and retention cleanup. |
-| 4 | `codex/phase-4-service-loop` | Background sampling loop, SQLite persistence, API history/process queries, WebSocket streaming, configuration, and graceful shutdown. |
-| 5 | `codex/phase-5` | Vite/React/TypeScript dashboard with current metrics, history charts, top processes, WebSocket updates, and HTTP fallback. |
-
-The branch names above identify the historical source branches. The integration
-branch combines their behavior into one baseline: the hardened Phase 3
-writer/repository, the Phase 4 service/API, and the Phase 5 dashboard.
+| 1 | Completed | Project skeleton, deterministic mock pipeline, Python/C++ boundaries, CI, and development setup. |
+| 2 | Completed | Fixture-tested parsers for Linux `/proc/stat`, `/proc/meminfo`, `/proc/<pid>/stat`, and battery `uevent` data. |
+| 3 | Completed | Hardened SQLite writes, batch insertion, events, recent-sample queries, indexes, and retention cleanup. |
+| 4 | Completed | Background sampling loop, SQLite persistence, API history/process queries, WebSocket streaming, configuration, and graceful shutdown. |
+| 5 | Completed | Vite/React/TypeScript dashboard with current metrics, history charts, top processes, WebSocket updates, and HTTP fallback. |
 
 ## Implemented Architecture
 
 - **C++:** collector interfaces, deterministic mock data, optional pybind11 bindings, and
   fixture-driven Linux parsers. The parsers do not read the live host filesystem.
-- **Python:** mock/native-compatible collection, simple battery and process-energy estimates,
-  SQLite storage, and service orchestration.
+- **Python:** mock/native-compatible collection, battery-runtime and process-energy estimation
+  helpers, SQLite storage, and service orchestration. The estimation helpers are not yet connected
+  to the sampling pipeline.
 - **API:** `GET /health`, `GET /snapshot`, `GET /metrics/recent`, `GET /processes/top`, and
   `WebSocket /ws/snapshot` in the integrated baseline.
 - **Dashboard:** local CPU, memory, battery, package-power, process, history, and connection views
   in the integrated baseline.
 
-## Run the Integrated Baseline Locally
+## Platform Direction
 
-Use the current `codex/phase-3-5-integration` checkout.
+- Windows is the only near-term runtime, validation, and release target.
+- Existing Linux parser and collector boundaries are retained only as a
+  **Future long-term plan for Linux**. Live Linux collection is not assigned to Phases 6-9.
+- Existing GPU interfaces and the unavailable fallback are retained only as a
+  **Future Long-term plan for GPU adapter**. Vendor-specific GPU adapters are not assigned to
+  Phases 6-9.
+- Phase 9 full-function acceptance covers the planned Windows scope and excludes these explicitly
+  deferred Linux and GPU-adapter items.
+
+## Planned Implementation
+
+| Phase | Planned scope |
+| --- | --- |
+| 6 | Complete CI/CD validation with Python/C++, frontend, and Ruff jobs plus scoped workflow permissions and concurrency. Release artifacts remain deferred to Phase 8. |
+| 7 | Connect the estimation helpers, make mock timestamps and values evolve deterministically, and add one production entry point for the API and dashboard. |
+| 8 | Implement live Windows collection, the transparent desktop overlay, and Windows production packaging and release artifacts. |
+| 9 | Perform physical Windows hardware validation, browser and overlay visual validation, and a packaged full-flow acceptance run. |
+
+Phase 9 is complete only when the packaged Windows application can collect, estimate, persist,
+query, stream, display, overlay, shut down, and restart successfully on the available physical
+Windows laptop. See [`docs/roadmap.md`](docs/roadmap.md) for detailed acceptance scope.
+
+## Run the Current Baseline Locally
+
+Use the current `main` checkout. Until Phase 7, start the API and dashboard separately.
 
 Set up and start the API:
 
@@ -78,9 +96,17 @@ npm.cmd run build
 
 ## Current Limitations
 
-- Linux support is parser-only; live `/proc` and `/sys` collection is not wired into the runtime.
-- Windows PDH/WMI collection, GPU adapters, the overlay, and release packaging are not implemented.
-- Mock/native-compatible data paths are used for service and dashboard validation.
-- Battery runtime and process energy values are estimates; process scores are relative indicators,
-  not measured watts.
-- Automated tests do not validate real hardware sensors.
+- The runtime still uses mock/native-compatible mock data; live Windows collection is planned for
+  Phase 8.
+- Battery-runtime and process-energy helpers are not connected to sampling, and their results will
+  remain estimates rather than measured watts after Phase 7 integration.
+- The built-in mock timestamp and values are fixed, so realistic evolving history is deferred to
+  Phase 7.
+- The API and dashboard require separate development processes until the Phase 7 production entry
+  point is added.
+- The transparent overlay and Windows packaging are deferred to Phase 8.
+- Current CI does not yet run frontend or Ruff validation, and release publication remains a
+  placeholder until the Phase 6 and Phase 8 work is completed.
+- Automated tests do not validate real hardware sensors or browser and overlay visuals; those
+  checks are the Phase 9 acceptance work.
+- Live Linux collection and GPU vendor adapters are long-term plans outside Phases 6-9.
