@@ -15,10 +15,14 @@ The workflow grants only `contents: read`, uses GitHub-owned actions, and cancel
 with a concurrency group scoped to each pull request or Git reference. The required branch checks
 are `python-cpp`, `frontend`, and `quality`.
 
-Successful live validation evidence:
+At documentation-capture time, the latest successful live validation run was:
 
 - Run: https://github.com/YujianLiG208/perfwatch/actions/runs/32549128595
 - Head SHA: `7779936240fe72095a922b5a955cdb8913be1877`
+
+That run validates workflow commit `7779936240fe72095a922b5a955cdb8913be1877`. The later
+documentation-only commit `78169a0b705a9477084eb7d5b2a4ea4b815b18d7` must receive its own CI
+rerun before final completion; no result or URL is recorded for that later rerun yet.
 
 Packaging and release automation remain deferred to Phase 8.
 
