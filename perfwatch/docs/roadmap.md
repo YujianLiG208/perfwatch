@@ -1,6 +1,6 @@
 # Roadmap
 
-Phases 1-5 are integrated on `main` and form the current mock-driven baseline.
+Phases 1-6 are complete and form the current mock-driven baseline.
 
 ## Platform Priority
 
@@ -23,16 +23,11 @@ hardware environment available to the project owner.
    hardware collection.
 5. Completed: local Vite and React dashboard with current metrics, history charts, top processes,
    WebSocket updates, and HTTP fallback.
+6. Completed: root GitHub Actions CI with a Windows-and-Ubuntu Python 3.11/3.12 matrix, Node 24
+   frontend tests and production build, Ruff, `contents: read`, per-pull-request or Git-reference
+   concurrency cancellation, and stable required checks `python-cpp`, `frontend`, and `quality`.
 
 ## Planned Phases
-
-### Phase 6: CI/CD Completion
-
-- Run Python and C++ validation across the supported Windows and Ubuntu CI matrix.
-- Add frontend tests and production builds to CI.
-- Add the existing Ruff check as the minimum Python quality gate.
-- Add scoped permissions, stable required-check names, and concurrency cancellation.
-- Keep release artifact publication deferred until the Windows packaging work in Phase 8.
 
 ### Phase 7: Integrated Local Application
 
