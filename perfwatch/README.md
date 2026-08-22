@@ -5,7 +5,7 @@ collection layer, Python orchestration and persistence, a FastAPI service, and a
 
 ## Current Status
 
-Phases 1-5 are integrated on `main` and form the current mock-driven baseline.
+Phases 1-6 are complete and form the current mock-driven baseline.
 
 | Phase | Status | Implemented scope |
 | --- | --- | --- |
@@ -14,6 +14,7 @@ Phases 1-5 are integrated on `main` and form the current mock-driven baseline.
 | 3 | Completed | Hardened SQLite writes, batch insertion, events, recent-sample queries, indexes, and retention cleanup. |
 | 4 | Completed | Background sampling loop, SQLite persistence, API history/process queries, WebSocket streaming, configuration, and graceful shutdown. |
 | 5 | Completed | Vite/React/TypeScript dashboard with current metrics, history charts, top processes, WebSocket updates, and HTTP fallback. |
+| 6 | Completed | Root GitHub Actions CI with Python/C++ validation on Windows and Ubuntu using Python 3.11 and 3.12, Node 24 frontend test/build, Ruff, and stable required checks `python-cpp`, `frontend`, and `quality`. |
 
 ## Implemented Architecture
 
@@ -42,7 +43,6 @@ Phases 1-5 are integrated on `main` and form the current mock-driven baseline.
 
 | Phase | Planned scope |
 | --- | --- |
-| 6 | Complete CI/CD validation with Python/C++, frontend, and Ruff jobs plus scoped workflow permissions and concurrency. Release artifacts remain deferred to Phase 8. |
 | 7 | Connect the estimation helpers, make mock timestamps and values evolve deterministically, and add one production entry point for the API and dashboard. |
 | 8 | Implement live Windows collection, the transparent desktop overlay, and Windows production packaging and release artifacts. |
 | 9 | Perform physical Windows hardware validation, browser and overlay visual validation, and a packaged full-flow acceptance run. |
@@ -105,8 +105,7 @@ npm.cmd run build
 - The API and dashboard require separate development processes until the Phase 7 production entry
   point is added.
 - The transparent overlay and Windows packaging are deferred to Phase 8.
-- Current CI does not yet run frontend or Ruff validation, and release publication remains a
-  placeholder until the Phase 6 and Phase 8 work is completed.
+- Release publication remains deferred to Phase 8.
 - Automated tests do not validate real hardware sensors or browser and overlay visuals; those
   checks are the Phase 9 acceptance work.
 - Live Linux collection and GPU vendor adapters are long-term plans outside Phases 6-9.

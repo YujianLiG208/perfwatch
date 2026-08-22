@@ -1,5 +1,11 @@
 # Project CI/CD Design
 
+> **Phase 6 status notice:** This legacy design is superseded where it conflicts with the
+> authoritative Phase 6 design at
+> `docs/superpowers/specs/2026-08-21-phase-6-ci-completion-design.md`. The implemented workflow is
+> `.github/workflows/ci.yml`. Release, packaging, publication, and signing material below is future
+> Phase 8 design input, not implemented Phase 6 behavior.
+
 **Status:** Approved design
 
 **Date:** 2026-08-03
