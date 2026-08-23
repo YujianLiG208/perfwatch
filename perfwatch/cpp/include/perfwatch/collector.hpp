@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include "perfwatch/snapshot.hpp"
 
 namespace perfwatch {
@@ -13,8 +15,11 @@ public:
 class MockCollector final : public Collector {
 public:
     SystemSnapshot collect() override;
+
+private:
+    std::uint64_t sample_index_{0};
 };
 
-SystemSnapshot make_mock_snapshot();
+SystemSnapshot make_mock_snapshot(std::uint64_t sample_index = 0);
 
 }  // namespace perfwatch
