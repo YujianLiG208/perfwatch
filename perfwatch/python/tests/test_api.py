@@ -108,3 +108,44 @@ def test_snapshot_websocket_streams_latest_snapshot(tmp_path) -> None:
     )
     assert snapshot["top_processes"][0]["name"] == "mock_process"
     assert snapshot["top_processes"][0]["estimated_power_score"] == pytest.approx(0.1)
+
+
+def test_dashboard_mount_preserves_http_and_websocket_routes(tmp_path) -> None:
+    dashboard_directory = tmp_path / "dashboard"
+    assets_directory = dashboard_directory / "assets"
+    assets_directory.mkdir(parents=True)
+    (dashboard_directory / "index.html").write_text(
+        "<h1>PerfWatch dashboard</h1>",
+        encoding="utf-8",
+    )
+    (assets_directory / "app.js").write_text(
+        "window.perfwatch = true;",
+        encoding="utf-8",
+    )
+    app = create_app(
+        settings=Settings(
+            database_path=tmp_path / "dashboard.sqlite3",
+            snapshot_interval_seconds=60.0,
+            use_mock_collector=True,
+        ),
+        collector=MockCollector(),
+        dashboard_directory=dashboard_directory,
+    )
+
+    with TestClient(app) as client:
+        root_response = client.get("/")
+        asset_response = client.get("/assets/app.js")
+        health_response = client.get("/health")
+        snapshot_response = client.get("/snapshot")
+        with client.websocket_connect("/ws/snapshot") as websocket:
+            websocket_snapshot = websocket.receive_json()
+
+    assert root_response.status_code == 200
+    assert "PerfWatch dashboard" in root_response.text
+    assert asset_response.status_code == 200
+    assert asset_response.text == "window.perfwatch = true;"
+    assert health_response.status_code == 200
+    assert health_response.json() == {"status": "ok"}
+    assert snapshot_response.status_code == 200
+    assert snapshot_response.json()["timestamp_ms"] == 1_710_000_000_000
+    assert websocket_snapshot["timestamp_ms"] == 1_710_000_000_000

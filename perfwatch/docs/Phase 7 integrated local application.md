@@ -1,6 +1,6 @@
 # Phase 7 Integrated Local Application
 
-**Status:** In progress — Phase 7B validated
+**Status:** In progress — Phase 7C validated
 
 **Date:** 2026-08-23
 
@@ -11,8 +11,8 @@
 ## Purpose
 
 Record the implementation and validation evidence for Roadmap Phase 7. This note is updated after
-each functional work item. The current record covers Phase 7A deterministic evolving mock samples
-and Phase 7B analytics enrichment, persistence, API propagation, and nullable-safe presentation.
+each functional work item. The current record covers Phase 7A deterministic evolving mock samples,
+Phase 7B analytics enrichment and persistence, and Phase 7C integrated local production serving.
 
 ## Phase 7A — Deterministic Evolving Mock Samples
 
@@ -110,7 +110,7 @@ required during later Phase 7 work.
 - The process score in a raw Phase 7A mock remains the deterministic fixture value; Phase 7B now
   replaces it at the shared sampling boundary before persistence or API presentation.
 - Battery runtime estimation, SQLite migration, and dashboard presentation are delivered by Phase
-  7B. The integrated production server remains Phase 7C work.
+  7B. The integrated production server is delivered by Phase 7C.
 - Packaging, installers, services, and release distribution remain Phase 8 work.
 
 ### Commit Scope Adjustment
@@ -259,12 +259,122 @@ Remaining limitations after Phase 7B:
 
 - The Starlette TestClient/httpx deprecation warning remains upstream of this change.
 - The production Dashboard bundle remains above Vite's default size warning threshold.
-- The local production server and same-origin static mount remain Phase 7C work.
+- The local production server and same-origin static mount are delivered by Phase 7C.
 - Full repository acceptance and documentation completion remain Phase 7D work.
 - Packaging, installers, services, and release distribution remain Phase 8 work.
 
+## Phase 7C — Integrated Local Production Server
+
+### Delivered Behavior
+
+- The Dashboard production build uses same-origin HTTP and WebSocket roots while the existing Vite
+  development proxy remains unchanged.
+- `create_app()` accepts an optional Dashboard directory and mounts `StaticFiles` at `/` only after
+  the HTTP and WebSocket routers have been registered.
+- The module-level `perfwatch.api.app:app` remains API-only because it calls `create_app()` without
+  a Dashboard directory.
+- The new `perfwatch-server` command defaults to `127.0.0.1:8000`, accepts an explicit Dashboard
+  directory, validates its `index.html`, and passes the combined FastAPI application directly to
+  `uvicorn.run()` without reload mode.
+- A missing Dashboard build exits through `ArgumentParser.error` before Uvicorn is started. The
+  server never invokes npm or creates a build automatically.
+- No Python or npm dependency was added; the implementation reuses FastAPI/Starlette
+  `StaticFiles`, Uvicorn, and Python standard-library argument and path handling.
+
+### Changed Interfaces and Files
+
+| File | Interface or behavior change |
+| --- | --- |
+| `ui/dashboard/.env.production` | Added same-origin `VITE_API_BASE_URL=/` and `VITE_WS_URL=/ws/snapshot`. |
+| `python/src/perfwatch/api/app.py` | Added optional `dashboard_directory` and mounted the Dashboard after all API/WebSocket routes. |
+| `python/tests/test_api.py` | Added real temporary `index.html` and asset coverage proving static, HTTP API, and WebSocket coexistence. |
+| `python/src/perfwatch/server.py` | Added the import-safe parser, source-tree default path, build validation, and Uvicorn entry point. |
+| `python/tests/test_server.py` | Added default/explicit argument, missing-build, and combined-application startup tests. |
+| `python/pyproject.toml` | Added `perfwatch-server = "perfwatch.server:main"` without changing the existing `perfwatch` script. |
+
+### CLI, Default Path, and Production URLs
+
+After building the Dashboard, the default local command is:
+
+```powershell
+perfwatch-server
+```
+
+The equivalent explicit form and a custom build-directory example are:
+
+```powershell
+perfwatch-server --host 127.0.0.1 --port 8000
+perfwatch-server --dashboard-directory C:\path\to\dashboard\dist
+```
+
+`default_dashboard_directory()` resolves from `python/src/perfwatch/server.py` to the source
+checkout's `ui/dashboard/dist` directory. This is intentionally a source-tree default; bundling
+Dashboard assets into a wheel, executable, installer, or release remains Phase 8 work.
+
+The production environment contains exactly:
+
+```dotenv
+VITE_API_BASE_URL=/
+VITE_WS_URL=/ws/snapshot
+```
+
+The existing frontend strips the trailing API slash, so HTTP requests resolve to `/health`,
+`/snapshot`, `/metrics/recent`, and `/processes/top`. WebSocket requests resolve directly to
+`/ws/snapshot`. Vite development continues to proxy `/api` and `/ws` and does not use a modified
+development configuration.
+
+### Mount Order and Failure Boundary
+
+The application factory creates its service and lifespan first, then registers the HTTP router,
+then the WebSocket router, and finally mounts `StaticFiles(directory=dashboard_directory,
+html=True)` at `/`. Starlette evaluates routes in registration order, so the final catch-all mount
+serves `/` and `/assets/*` without shadowing `/health`, `/snapshot`, the metrics/process endpoints,
+or `/ws/snapshot`.
+
+The CLI resolves the selected Dashboard directory and checks for `index.html` before composing the
+application. Invalid input produces argparse exit code 2 and does not call Uvicorn. For valid
+input, one combined FastAPI application object is passed to `uvicorn.run()` with the selected host
+and integer port.
+
+### Test-Driven Implementation Evidence
+
+| Step | Command or observation | Result |
+| --- | --- | --- |
+| Static/API/WebSocket RED | New coexistence test before changing `create_app()` | `1 failed`; `create_app()` rejected the new `dashboard_directory` argument. |
+| Static/API/WebSocket GREEN | Same targeted test after the optional mount was implemented | `1 passed`; `/`, `/assets/app.js`, `/health`, `/snapshot`, and `/ws/snapshot` coexisted. |
+| Server RED | `python -m pytest python/tests/test_server.py -q` before `perfwatch.server` existed | Collection stopped with the expected missing-module import error. |
+| Server first GREEN attempt | Same command after the minimal server implementation | `3 passed, 1 failed`; the failure was a test-only assumption that every FastAPI route wrapper exposes `.name`. |
+| Server GREEN | Same command after using a safe route-name lookup in the assertion | `4 passed`. |
+| Final Stage 2 target | `python -m pytest python/tests/test_server.py python/tests/test_api.py -q` | `10 passed`; one existing Starlette TestClient/httpx deprecation warning. |
+
+### Stage 3 Validation Evidence
+
+| Validation | Result |
+| --- | --- |
+| `npm run build` from `ui/dashboard` | PASS — TypeScript checks passed; Vite transformed `583` modules and built in `1.22s`. |
+| `Test-Path -LiteralPath dist/index.html` from `ui/dashboard` | PASS — `True`. |
+| `python -m pytest python/tests/test_server.py python/tests/test_api.py -q` | PASS — `10 passed in 2.39s`; one existing Starlette TestClient/httpx deprecation warning. |
+| `python -m ruff check python/src/perfwatch/api/app.py python/src/perfwatch/server.py python/tests/test_api.py python/tests/test_server.py` | PASS — `All checks passed!` |
+| Non-blocking `TestClient` smoke | PASS — `/`, `/health`, and `/snapshot` returned 200; `/ws/snapshot` returned first-sample timestamp `1710000000000`. |
+
+The build emitted `dist/index.html`, a `5.16 kB` CSS asset, and a `539.37 kB` JavaScript asset. Vite
+again reported its non-blocking warning for a chunk above 500 kB. Generated `dist/` output remains
+outside the Phase 7C commit. The smoke used a temporary SQLite database and closed its TestClient;
+it did not start or leave behind a standalone Uvicorn process.
+
+### Remaining Limitations After Phase 7C
+
+- The Starlette TestClient/httpx deprecation warning remains upstream of this change.
+- The production Dashboard bundle remains above Vite's default size warning threshold.
+- The default server path supports a built source checkout; packaged asset discovery remains Phase
+  8 work.
+- Full repository acceptance and final Phase 7 documentation remain Phase 7D work.
+- Live collection, overlays, packaging, installers, services, and distribution remain outside the
+  completed 7A–7C scope.
+
 ## Next Pipeline Stage
 
-Phase 7B proceeds to Stage 5 after owner approval. Stage 5 must inspect `git diff --check`, verify
-SQLite INSERT ordering against schema ordering, verify generated Dashboard `dist/` output is not
-tracked, inspect only the Phase 7B diff, and then stop before any commit.
+Phase 7C proceeds to Stage 5 after owner approval. Stage 5 must inspect `git diff --check`, verify
+that `dist/`, SQLite files, and runtime logs remain untracked or ignored, confirm static mounting
+occurs after every API and WebSocket route, inspect only the Phase 7C diff, and then stop before
+any commit.
