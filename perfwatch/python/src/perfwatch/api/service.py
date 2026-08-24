@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import time
 from typing import Any
 
+from perfwatch.analytics.snapshot import enrich_snapshot
 from perfwatch.collectors import Collector
 from perfwatch.config.settings import Settings
 from perfwatch.storage.repository import SnapshotRepository
@@ -49,6 +50,11 @@ class ServiceState:
         except Exception as error:
             self._record_error(source="collector", error=error)
             return
+
+        try:
+            enrich_snapshot(snapshot)
+        except Exception as error:
+            self._record_error(source="analytics", error=error)
 
         self.current_snapshot = snapshot
         try:

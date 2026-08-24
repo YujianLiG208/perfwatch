@@ -2,7 +2,7 @@ import { MetricCharts } from "./components/MetricCharts";
 import { MetricCard } from "./components/MetricCard";
 import { ProcessTable } from "./components/ProcessTable";
 import { StatusBar } from "./components/StatusBar";
-import { formatBytes, formatPercent } from "./data";
+import { formatBytes, formatDurationSeconds, formatPercent } from "./data";
 import { useDashboardData } from "./useDashboardData";
 import "./styles.css";
 
@@ -98,9 +98,13 @@ function App() {
               : "Not available"
           }
           detail={
-            snapshot.battery.available
-              ? `${snapshot.battery.charging ? "Charging" : "Discharging"} / ${snapshot.battery.energy_remaining_wh.toFixed(1)} Wh remaining`
-              : "No battery sample reported"
+            !snapshot.battery.available
+              ? "No battery sample reported"
+              : snapshot.battery.charging
+                ? "Charging"
+                : snapshot.battery.estimated_remaining_seconds !== null
+                  ? `Estimated ${formatDurationSeconds(snapshot.battery.estimated_remaining_seconds)} remaining`
+                  : "Estimated time unavailable"
           }
           tone="green"
         />
@@ -114,7 +118,9 @@ function App() {
           label="Estimated process energy score"
           value={
             highestProcess
-              ? highestProcess.estimated_power_score.toFixed(2)
+              ? highestProcess.estimated_power_score !== null
+                ? highestProcess.estimated_power_score.toFixed(2)
+                : "Unavailable"
               : "No sample"
           }
           detail={

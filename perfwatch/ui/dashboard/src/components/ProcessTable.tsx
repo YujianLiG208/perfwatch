@@ -42,7 +42,9 @@ export function ProcessTable({ processes }: ProcessTableProps) {
                   <td>{formatBytes(process.rss_bytes)}</td>
                   <td>{formatBytes(process.vram_bytes)}</td>
                   <td className="score">
-                    {process.estimated_power_score.toFixed(3)}
+                    {process.estimated_power_score !== null
+                      ? process.estimated_power_score.toFixed(3)
+                      : "Unavailable"}
                   </td>
                 </tr>
               ))}

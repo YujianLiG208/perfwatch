@@ -36,6 +36,16 @@ export function formatPercent(value: number): string {
   return `${value.toFixed(1)}%`;
 }
 
+export function formatDurationSeconds(value: number | null): string {
+  if (value === null || !Number.isFinite(value) || value < 0) {
+    return "Unavailable";
+  }
+  const totalMinutes = Math.round(value / 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+}
+
 export function formatBytes(value: number): string {
   if (value <= 0) {
     return "0 B";

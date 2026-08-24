@@ -1,6 +1,6 @@
 # Roadmap
 
-Phases 1-6 are complete and form the current mock-driven baseline.
+Phases 1-7 are complete and form the current integrated, mock-driven application baseline.
 
 ## Platform Priority
 
@@ -26,17 +26,15 @@ hardware environment available to the project owner.
 6. Completed: root GitHub Actions CI with a Windows-and-Ubuntu Python 3.11/3.12 matrix, Node 24
    frontend tests and production build, Ruff, `contents: read`, per-pull-request or Git-reference
    concurrency cancellation, and stable required checks `python-cpp`, `frontend`, and `quality`.
+7. Completed Phase 7 feature scope:
+   - deterministic evolving mock timestamps and values;
+   - battery-runtime and process-energy enrichment through persistence, API/WebSocket, and Dashboard;
+   - one production entry point serving the FastAPI API and built Dashboard together.
+
+Phase 7D is the documentation and full-acceptance closeout for these three feature deliveries. It is
+not a fourth Phase 7 feature.
 
 ## Planned Phases
-
-### Phase 7: Integrated Local Application
-
-- Connect battery-runtime and process-energy scoring helpers to the sampling pipeline while keeping
-  estimated values explicitly labeled.
-- Replace the fixed mock timestamp and values with deterministic, evolving samples suitable for
-  exercising history charts.
-- Add one production entry point that serves the FastAPI API and built dashboard together, so the
-  API and frontend no longer need to be started separately.
 
 ### Phase 8: Windows Product Features
 

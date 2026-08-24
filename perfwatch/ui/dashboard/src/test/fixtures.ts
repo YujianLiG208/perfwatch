@@ -18,6 +18,7 @@ export const snapshotFixture: Snapshot = {
     percent: 78,
     power_watts: 18.5,
     energy_remaining_wh: 45,
+    estimated_remaining_seconds: 8756.756756756757,
   },
   gpu: {
     available: false,
@@ -35,7 +36,7 @@ export const snapshotFixture: Snapshot = {
       cpu_percent: 12.5,
       rss_bytes: 268_435_456,
       vram_bytes: 0,
-      estimated_power_score: 0.42,
+      estimated_power_score: 0.1,
     },
   ],
 };

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   appendMetricSample,
   formatBytes,
+  formatDurationSeconds,
   formatPercent,
   snapshotToMetricSample,
 } from "./data";
@@ -45,5 +46,15 @@ describe("metric formatting", () => {
     expect(formatPercent(42.54)).toBe("42.5%");
     expect(formatBytes(268_435_456)).toBe("256 MB");
     expect(formatBytes(0)).toBe("0 B");
+  });
+
+  it.each([
+    [null, "Unavailable"],
+    [-1, "Unavailable"],
+    [59, "1m"],
+    [3_600, "1h 0m"],
+    [8_756.756, "2h 26m"],
+  ])("formats duration %s as %s", (value, expected) => {
+    expect(formatDurationSeconds(value)).toBe(expected);
   });
 });

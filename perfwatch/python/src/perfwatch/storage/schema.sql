@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS samples_system (
     battery_percent REAL,
     battery_power_watts REAL,
     battery_energy_remaining_wh REAL,
+    battery_estimated_remaining_seconds REAL,
     gpu_available INTEGER,
     gpu_vendor TEXT,
     gpu_usage_percent REAL,

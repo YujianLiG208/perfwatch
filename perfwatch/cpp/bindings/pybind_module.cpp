@@ -60,8 +60,11 @@ py::dict snapshot_to_dict(const perfwatch::SystemSnapshot& snapshot) {
 
 PYBIND11_MODULE(perfwatch_native, module) {
     module.doc() = "Phase 1 perfwatch native mock bindings.";
-    module.def("get_mock_snapshot", []() {
-        perfwatch::MockCollector collector;
-        return snapshot_to_dict(collector.collect());
-    });
+    module.def(
+        "get_mock_snapshot",
+        [](std::uint64_t sample_index) {
+            return snapshot_to_dict(perfwatch::make_mock_snapshot(sample_index));
+        },
+        py::arg("sample_index") = 0
+    );
 }

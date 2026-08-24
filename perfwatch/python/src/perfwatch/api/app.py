@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from perfwatch.api.routes import router as routes_router
 from perfwatch.api.service import ServiceState
@@ -18,6 +20,7 @@ def create_app(
     settings: Settings | None = None,
     collector: Collector | None = None,
     repository: SnapshotRepository | None = None,
+    dashboard_directory: Path | None = None,
 ) -> FastAPI:
     resolved_settings = settings or get_settings()
     service = ServiceState(
@@ -40,6 +43,12 @@ def create_app(
     application.state.service = service
     application.include_router(routes_router)
     application.include_router(websocket_router)
+    if dashboard_directory is not None:
+        application.mount(
+            "/",
+            StaticFiles(directory=dashboard_directory, html=True),
+            name="dashboard",
+        )
     return application
 
 
