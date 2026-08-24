@@ -33,13 +33,13 @@ function response(body: unknown, status = 200): Response {
 function installFetch(
   processCount = 1,
   snapshotStatus = 200,
+  processScore: number | null = snapshotFixture.top_processes[0].estimated_power_score,
 ): ReturnType<typeof vi.fn> {
   const processes = Array.from({ length: processCount }, (_, index) => ({
     ...snapshotFixture.top_processes[0],
     pid: 1_000 + index,
     name: `process-${index}`,
-    estimated_power_score:
-      snapshotFixture.top_processes[0].estimated_power_score - index / 100,
+    estimated_power_score: processScore === null ? null : processScore - index / 100,
   }));
   const snapshot = { ...snapshotFixture, top_processes: processes };
 
@@ -87,7 +87,8 @@ describe("App", () => {
     expect(screen.getByText("42.5%")).toBeInTheDocument();
     expect(screen.getByText("50.0%")).toBeInTheDocument();
     expect(screen.getByText("78.0%")).toBeInTheDocument();
-    expect(screen.getByText("0.42")).toBeInTheDocument();
+    expect(screen.getByText("Estimated 2h 26m remaining")).toBeInTheDocument();
+    expect(screen.getByText("0.10")).toBeInTheDocument();
     expect(screen.getByText("Estimated process energy score")).toBeInTheDocument();
     expect(screen.getByRole("table", { name: "Top processes" })).toBeInTheDocument();
   });
@@ -107,6 +108,14 @@ describe("App", () => {
     expect(
       await screen.findByText("No process samples are available."),
     ).toBeInTheDocument();
+  });
+
+  it("renders unavailable for a null process score", async () => {
+    installFetch(1, 200, null);
+    render(<App />);
+
+    expect(await screen.findByText("process-0")).toBeInTheDocument();
+    expect(screen.getAllByText("Unavailable")).toHaveLength(2);
   });
 
   it("renders a fatal snapshot error", async () => {

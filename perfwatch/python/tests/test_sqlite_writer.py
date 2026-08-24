@@ -1,10 +1,11 @@
 import sqlite3
 from copy import deepcopy
+from importlib.resources import files
 
 import pytest
 
 from perfwatch.collectors.mock import get_mock_snapshot
-from perfwatch.storage.sqlite_writer import SQLiteWriter
+from perfwatch.storage.sqlite_writer import SYSTEM_INSERT_SQL, SQLiteWriter, _system_values
 
 
 def snapshot_at(timestamp_ms: int, process_name: str = "mock_process") -> dict:
@@ -33,6 +34,9 @@ def test_sqlite_writer_initializes_schema(tmp_path) -> None:
                 "SELECT name FROM sqlite_master WHERE type = 'index'"
             ).fetchall()
         }
+        system_columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(samples_system)").fetchall()
+        }
 
     assert {"samples_system", "samples_process", "events"} <= table_names
     assert {
@@ -40,6 +44,61 @@ def test_sqlite_writer_initializes_schema(tmp_path) -> None:
         "idx_samples_process_ts_ms",
         "idx_events_ts_ms",
     } <= index_names
+    assert "battery_estimated_remaining_seconds" in system_columns
+
+
+def test_sqlite_writer_migrates_phase_six_schema_without_losing_rows(tmp_path) -> None:
+    database_path = tmp_path / "legacy.sqlite3"
+    schema = files("perfwatch.storage").joinpath("schema.sql").read_text(encoding="utf-8")
+    phase6_schema = schema.replace(
+        "    battery_estimated_remaining_seconds REAL,\n",
+        "",
+    )
+    with sqlite3.connect(database_path) as connection:
+        connection.executescript(phase6_schema)
+        connection.execute(
+            "INSERT INTO samples_system (ts_ms) VALUES (?)",
+            (1_709_999_999_000,),
+        )
+
+    SQLiteWriter(database_path).initialize()
+
+    with sqlite3.connect(database_path) as connection:
+        columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(samples_system)").fetchall()
+        }
+        timestamps = connection.execute("SELECT ts_ms FROM samples_system").fetchall()
+
+    assert "battery_estimated_remaining_seconds" in columns
+    assert timestamps == [(1_709_999_999_000,)]
+
+
+def test_system_insert_has_twenty_columns_placeholders_and_values() -> None:
+    columns = SYSTEM_INSERT_SQL.partition("(")[2].partition(")")[0].split(",")
+    snapshot = get_mock_snapshot()
+    snapshot["battery"]["estimated_remaining_seconds"] = 8_756.756756756757
+
+    assert len(columns) == SYSTEM_INSERT_SQL.count("?") == len(
+        _system_values(snapshot, snapshot["timestamp_ms"])
+    ) == 20
+
+
+@pytest.mark.parametrize(
+    "estimated_remaining_seconds",
+    [8_756.756756756757, None],
+)
+def test_sqlite_writer_round_trips_nullable_battery_estimate(
+    tmp_path,
+    estimated_remaining_seconds: float | None,
+) -> None:
+    writer = SQLiteWriter(tmp_path / "battery-estimate.sqlite3")
+    snapshot = get_mock_snapshot()
+    snapshot["battery"]["estimated_remaining_seconds"] = estimated_remaining_seconds
+
+    writer.insert_snapshot(snapshot)
+
+    metrics = writer.fetch_recent_metrics(limit=1)
+    assert metrics[0]["battery"]["estimated_remaining_seconds"] == estimated_remaining_seconds
 
 
 def test_sqlite_writer_inserts_single_snapshot(tmp_path) -> None:

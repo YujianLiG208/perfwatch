@@ -1,6 +1,9 @@
 import asyncio
 from copy import deepcopy
 import sqlite3
+from typing import Any
+
+import pytest
 
 from perfwatch.api.service import ServiceState
 from perfwatch.collectors.mock import get_mock_snapshot
@@ -32,6 +35,87 @@ class TrackingRepository(SnapshotRepository):
     def close(self) -> None:
         self.closed = True
         super().close()
+
+
+class RecordingRepository(SnapshotRepository):
+    def __init__(self) -> None:
+        self.snapshots: list[dict[str, Any]] = []
+        self.events: list[dict[str, Any]] = []
+
+    def add_snapshot(self, snapshot: dict[str, Any]) -> int:
+        self.snapshots.append(snapshot)
+        return len(self.snapshots)
+
+    def add_event(
+        self,
+        *,
+        timestamp_ms: int,
+        level: str,
+        source: str,
+        message: str,
+    ) -> int:
+        self.events.append(
+            {
+                "timestamp_ms": timestamp_ms,
+                "level": level,
+                "source": source,
+                "message": message,
+            }
+        )
+        return len(self.events)
+
+
+def test_sample_once_enriches_current_and_persisted_snapshot(tmp_path) -> None:
+    async def exercise() -> None:
+        repository = RecordingRepository()
+        service = ServiceState(
+            settings=Settings(database_path=tmp_path / "enriched.sqlite3"),
+            collector=CountingCollector(),
+            repository=repository,
+        )
+
+        await service.sample_once()
+
+        assert service.current_snapshot is not None
+        assert service.current_snapshot["battery"]["estimated_remaining_seconds"] == pytest.approx(
+            8_756.756756756757
+        )
+        assert service.current_snapshot["top_processes"][0][
+            "estimated_power_score"
+        ] == pytest.approx(0.1)
+        assert repository.snapshots == [service.current_snapshot]
+        assert repository.snapshots[0] is service.current_snapshot
+
+    asyncio.run(exercise())
+
+
+def test_sample_once_records_analytics_error_and_persists_raw_snapshot(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_enrichment(snapshot: dict[str, object]) -> dict[str, object]:
+        raise RuntimeError("analytics failed")
+
+    monkeypatch.setattr("perfwatch.api.service.enrich_snapshot", fail_enrichment)
+
+    async def exercise() -> None:
+        repository = RecordingRepository()
+        service = ServiceState(
+            settings=Settings(database_path=tmp_path / "analytics-error.sqlite3"),
+            collector=CountingCollector(),
+            repository=repository,
+        )
+
+        await service.sample_once()
+
+        assert service.current_snapshot is not None
+        assert service.current_snapshot["top_processes"][0]["estimated_power_score"] == 0.42
+        assert repository.snapshots == [service.current_snapshot]
+        assert repository.snapshots[0] is service.current_snapshot
+        assert repository.events[0]["source"] == "analytics"
+        assert "analytics failed" in repository.events[0]["message"]
+
+    asyncio.run(exercise())
 
 
 def test_service_startup_starts_sampling_task(tmp_path) -> None:

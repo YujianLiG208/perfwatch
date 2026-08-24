@@ -22,6 +22,7 @@ INSERT INTO samples_system (
     battery_percent,
     battery_power_watts,
     battery_energy_remaining_wh,
+    battery_estimated_remaining_seconds,
     gpu_available,
     gpu_vendor,
     gpu_usage_percent,
@@ -29,7 +30,7 @@ INSERT INTO samples_system (
     gpu_vram_used_bytes,
     gpu_power_watts,
     gpu_temperature_celsius
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 """
 
 PROCESS_INSERT_SQL = """
@@ -61,6 +62,15 @@ class SQLiteWriter:
         with closing(self.connect()) as connection:
             with connection:
                 connection.executescript(schema)
+                columns = {
+                    row["name"]
+                    for row in connection.execute("PRAGMA table_info(samples_system)").fetchall()
+                }
+                if "battery_estimated_remaining_seconds" not in columns:
+                    connection.execute(
+                        "ALTER TABLE samples_system "
+                        "ADD COLUMN battery_estimated_remaining_seconds REAL"
+                    )
 
     def insert_snapshot(self, snapshot: dict[str, Any]) -> int:
         system_ids = self.insert_snapshots([snapshot])
@@ -243,6 +253,7 @@ class SQLiteWriter:
                 "percent": row["battery_percent"],
                 "power_watts": row["battery_power_watts"],
                 "energy_remaining_wh": row["battery_energy_remaining_wh"],
+                "estimated_remaining_seconds": row["battery_estimated_remaining_seconds"],
             },
             "gpu": {
                 "available": bool(row["gpu_available"]),
@@ -328,6 +339,7 @@ def _system_values(snapshot: Mapping[str, Any], timestamp_ms: int) -> tuple[Any,
         _as_float(battery.get("percent")),
         _as_float(battery.get("power_watts")),
         _as_float(battery.get("energy_remaining_wh")),
+        _as_float(battery.get("estimated_remaining_seconds")),
         _as_bool_int(gpu.get("available")),
         _as_text(gpu.get("vendor")),
         _as_float(gpu.get("usage_percent")),

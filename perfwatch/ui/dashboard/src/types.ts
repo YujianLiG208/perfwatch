@@ -16,6 +16,7 @@ export interface BatteryMetrics {
   percent: number;
   power_watts: number;
   energy_remaining_wh: number;
+  estimated_remaining_seconds: number | null;
 }
 
 export interface GpuMetrics {
@@ -35,7 +36,7 @@ export interface ProcessSample {
   cpu_percent: number;
   rss_bytes: number;
   vram_bytes: number;
-  estimated_power_score: number;
+  estimated_power_score: number | null;
 }
 
 export interface Snapshot {
