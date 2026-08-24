@@ -2,8 +2,9 @@
 
 ## Unit Tests
 
-Python unit tests cover deterministic mock collection, simple analytics helpers, SQLite insertion,
-repository queries, event insertion, configuration, and API endpoints.
+Python unit tests cover deterministic indexed mock collection, analytics helpers and snapshot
+enrichment, SQLite insertion and migration, repository queries, event insertion, configuration,
+server CLI behavior, and API endpoints.
 
 Phase 3 persistence coverage includes single and batch snapshot writes, transactional rollback,
 system and process time-window queries, schema indexes, dashboard metric shaping, top-process
@@ -11,7 +12,9 @@ selection, event writes, and retention cleanup.
 
 ## Mock Tests
 
-C++ and Python mock tests verify stable values and expected keys. This is the Phase 1 test anchor.
+C++ and Python mock tests verify the same index-zero baseline, evolving formulas, repeatability,
+cycle boundaries, invalid indices, and independent collector state. The native-compatible Python
+wrapper is tested both with a compiled extension and with its pure-Python fallback.
 
 ## Fixture Tests
 
@@ -31,6 +34,10 @@ error events. HTTP coverage includes `/health`, `/snapshot`, `/metrics/recent`, 
 Every service test uses pytest temporary paths for its database. Tests do not require real hardware
 sensors, a Linux VM, or a compiled native module.
 
+Phase 7 service tests verify enrichment occurs before current/persisted assignment, analytics errors
+preserve the raw sample, legacy database migration is additive and idempotent, enriched values reach
+all HTTP/WebSocket contracts, and static assets coexist with every API route.
+
 ## Dashboard Tests
 
 Phase 5 uses Vitest and React Testing Library. Tests cover:
@@ -43,23 +50,35 @@ Phase 5 uses Vitest and React Testing Library. Tests cover:
   five-second HTTP fallback polling;
 - the complete 1/2/4/8/10-second reconnect schedule, reset after connection, constructor failure,
   stale fallback response rejection, and unmount cleanup.
+- estimated battery-duration formatting and nullable process-score rendering;
+- same-origin production HTTP/WebSocket configuration.
 
 HTTP responses and WebSocket connections are deterministic test doubles that mirror the complete
 Phase 4 snapshot structure. No frontend test requires a running API or host hardware.
 
-Before Phase 3 integration, the Phase 5 baseline validation completed with 20 frontend tests,
-16 Python tests, and one C++ test passing. That Python suite retained a Starlette/httpx deprecation
-warning. The production frontend build succeeded and reported a non-blocking Vite advisory because
-the single Recharts bundle was larger than 500 kB before gzip compression. Fresh Task 3 integration
-results are recorded in the integration plan after validation rather than predicted here.
+The production frontend build may report a non-blocking Vite advisory because the Recharts bundle
+is larger than 500 kB before gzip compression. Exact Phase 7 acceptance counts and command results
+are recorded in `docs/Phase 7 integrated local application.md`.
+
+## Phase 7 Full Acceptance
+
+Final acceptance runs the complete Python test suite and Ruff, the complete Dashboard Vitest suite
+and production build, the C++ configure/build/CTest flow, a native-backed Python mock test, and an
+integrated `TestClient` smoke covering `/`, `/health`, `/snapshot`, `/metrics/recent`,
+`/processes/top`, and `/ws/snapshot`.
+
+Native acceptance uses the owner-validated Ninja executable passed explicitly as
+`CMAKE_MAKE_PROGRAM`, the validated pybind11 CMake directory, and an MSVC environment loaded in the
+same PowerShell process. The exact machine paths belong in the Phase 7 process note, not in this
+portable strategy document.
 
 ## CI Limitations
 
 CI can validate deterministic parser and mock code paths plus build shape. Deterministic mocks and
-fixtures do not validate physical sensors or live Linux, Windows, or GPU collection. Phase 4
-validates backend orchestration through the mock/native-compatible collector interface, and Phase 5
-validates browser behavior through mocked network boundaries. Browser visual QA remains an
-additional local check rather than a hardware test.
+fixtures do not validate physical sensors or live Linux, Windows, or GPU collection. The service
+suite validates backend orchestration through the mock/native-compatible collector interface, and
+the Dashboard suite validates browser behavior through mocked network boundaries. Browser visual
+QA remains an additional local check rather than a hardware test.
 
 ## Future Real-Hardware Testing
 

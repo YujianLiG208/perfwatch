@@ -1,8 +1,8 @@
 # Phase 7 Integrated Local Application
 
-**Status:** In progress — Phase 7C validated
+**Status:** Completed — 7A–7C delivered and the non-feature 7D acceptance closeout passed
 
-**Date:** 2026-08-23
+**Date:** 2026-08-24
 
 **Branch:** `codex/phase7`
 
@@ -13,6 +13,10 @@
 Record the implementation and validation evidence for Roadmap Phase 7. This note is updated after
 each functional work item. The current record covers Phase 7A deterministic evolving mock samples,
 Phase 7B analytics enrichment and persistence, and Phase 7C integrated local production serving.
+
+> **Scope clarification:** Phase 7 has three feature implementation work items: 7A, 7B, and 7C.
+> Phase 7D is not a fourth feature; it is the documentation synchronization and full-acceptance
+> closeout for those three delivered features.
 
 ## Phase 7A — Deterministic Evolving Mock Samples
 
@@ -73,8 +77,8 @@ errors. Production changes were made only after the corresponding failure was ob
 | `ctest --test-dir build-phase7 --output-on-failure` | PASS — `1/1` passed, 0 failed |
 
 Stage 3 intentionally ran the Phase 7A scoped Python and C++ validation rather than the complete
-repository acceptance suite. Full Python, frontend, and native acceptance remains scheduled for
-Phase 7D.
+repository acceptance suite. Full Python, frontend, and native acceptance is performed by the
+non-feature Phase 7D closeout.
 
 ### Toolchain Paths and Environment Recovery
 
@@ -260,7 +264,8 @@ Remaining limitations after Phase 7B:
 - The Starlette TestClient/httpx deprecation warning remains upstream of this change.
 - The production Dashboard bundle remains above Vite's default size warning threshold.
 - The local production server and same-origin static mount are delivered by Phase 7C.
-- Full repository acceptance and documentation completion remain Phase 7D work.
+- Full repository acceptance and documentation completion belong to the non-feature Phase 7D
+  closeout.
 - Packaging, installers, services, and release distribution remain Phase 8 work.
 
 ## Phase 7C — Integrated Local Production Server
@@ -368,13 +373,81 @@ it did not start or leave behind a standalone Uvicorn process.
 - The production Dashboard bundle remains above Vite's default size warning threshold.
 - The default server path supports a built source checkout; packaged asset discovery remains Phase
   8 work.
-- Full repository acceptance and final Phase 7 documentation remain Phase 7D work.
+- Full repository acceptance and final documentation belong to the non-feature Phase 7D closeout.
 - Live collection, overlays, packaging, installers, services, and distribution remain outside the
   completed 7A–7C scope.
 
-## Next Pipeline Stage
+## Phase 7D — Documentation and Full Acceptance Closeout (Not a Feature)
 
-Phase 7C proceeds to Stage 5 after owner approval. Stage 5 must inspect `git diff --check`, verify
-that `dist/`, SQLite files, and runtime logs remain untracked or ignored, confirm static mounting
-occurs after every API and WebSocket route, inspect only the Phase 7C diff, and then stop before
-any commit.
+Phase 7D adds no product behavior. It synchronizes the documentation for the three Phase 7 feature
+deliveries (7A–7C), runs the complete repository acceptance set, and records the evidence required
+to close Phase 7 without claiming Phase 8 work.
+
+### Dependency State
+
+No dependency was installed or upgraded during acceptance.
+
+| Command | Result |
+| --- | --- |
+| `python --version` | Exit 0 — `Python 3.12.13` |
+| `node --version` | Exit 0 — `v26.3.0` |
+| `npm --version` | Exit 0 — `11.16.0` |
+| `cmake --version` | Exit 0 — `4.2.3` |
+| `git --version` | Exit 0 — `2.53.0.windows.1` |
+
+### Full Acceptance Evidence
+
+| Validation | Result |
+| --- | --- |
+| `python -m pytest python/tests -q` | Exit 0 — `59 passed in 3.94s`; one existing Starlette TestClient/httpx deprecation warning. |
+| `python -m ruff check python/src python/tests` | Exit 0 — `All checks passed!` |
+| `npm test -- --run` from `ui/dashboard` | Exit 0 — `4` files and `26` tests passed in `11.31s`. |
+| `npm run build` from `ui/dashboard` | Exit 0 — TypeScript checks passed; Vite transformed `583` modules and built in `600ms`. |
+| Explicit MSVC/Ninja/Python/pybind11 CMake configure | Exit 0 — MSVC `19.51.36246.0`; configuration and generation completed. |
+| `cmake --build build-phase7` | Exit 0 — all `20` Ninja build steps completed, including `perfwatch_native.cp312-win_amd64.pyd`. |
+| `ctest --test-dir build-phase7 --output-on-failure` | Exit 0 — `1/1` passed, 0 failed in `0.14s`. |
+| Native-backed `python -m pytest python/tests/test_mock_collector.py -q` | Exit 0 — the extension loaded from the active `4e73/build-phase7` directory and `11 passed in 0.05s`. |
+| Integrated `TestClient` smoke | Exit 0 — `/`, `/health`, `/snapshot`, `/metrics/recent`, and `/processes/top` returned 200; `/ws/snapshot` returned timestamp `1710000000000`; the enriched battery estimate was present. |
+
+The first integrated smoke attempt exited 1 before application startup because the one-off verifier
+imported `Settings` from `perfwatch.config`, whose `__init__.py` does not re-export that class. The
+repository consistently imports it from `perfwatch.config.settings`. The owner authorized a rerun
+with only that verifier import corrected; the unchanged endpoint and data assertions then passed.
+No product file was changed for this verifier-only correction.
+
+### Native Acceptance Paths
+
+The native acceptance loaded the Visual Studio development environment in the same PowerShell
+process and used these explicit paths:
+
+| Input | Path |
+| --- | --- |
+| Ninja (`CMAKE_MAKE_PROGRAM`) | `C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja\ninja.exe` |
+| MSVC compiler selected after environment load | `C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\bin\HostX64\x64\cl.exe` |
+| Python (`Python3_EXECUTABLE`) | `C:\Users\Yujian Li\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe` |
+| `pybind11_DIR` | `C:\Users\Yujian Li\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\site-packages\pybind11\share\cmake\pybind11` |
+| Visual Studio environment script | `C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\Launch-VsDevShell.ps1` |
+
+The configure, build, and CTest group completed without a Ninja path error, confirming the earlier
+path issue remains resolved. `PYTHONPATH` was changed only inside the native-backed test process to
+select the generated extension and current worktree sources; no user or system environment was
+permanently changed.
+
+### Generated Output and Remaining Limitations
+
+- `ui/dashboard/dist` and `build-phase7` were regenerated only for acceptance. Neither belongs in
+  the documentation commit; the reproducible native build directory is removed after its evidence
+  is recorded, and the ignored Dashboard build remains unstaged.
+- The Dashboard JavaScript asset remains `539.37 kB` and triggers Vite's non-blocking 500 kB chunk
+  advisory.
+- The existing Starlette TestClient/httpx deprecation warning remains upstream of this change.
+- The default production asset path supports a built source checkout. Live Windows collection,
+  overlays, packaging, installers, services, release artifacts, and distribution remain Phase 8.
+- Physical sensor and browser/overlay visual validation remains Phase 9 work.
+
+## Completion Boundary
+
+Phase 7 is complete with three delivered feature work items (7A–7C) and one non-feature documentation
+and acceptance closeout (7D). The worktree passed the final documentation diff and generated-output
+review before the six approved documentation files were committed. Phase 8 remains the next planned
+implementation phase; no Phase 8 behavior is claimed here.

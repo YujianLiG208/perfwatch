@@ -5,7 +5,7 @@ collection layer, Python orchestration and persistence, a FastAPI service, and a
 
 ## Current Status
 
-Phases 1-6 are complete and form the current mock-driven baseline.
+Phases 1-7 are complete and form the current integrated, mock-driven application baseline.
 
 | Phase | Status | Implemented scope |
 | --- | --- | --- |
@@ -15,18 +15,18 @@ Phases 1-6 are complete and form the current mock-driven baseline.
 | 4 | Completed | Background sampling loop, SQLite persistence, API history/process queries, WebSocket streaming, configuration, and graceful shutdown. |
 | 5 | Completed | Vite/React/TypeScript dashboard with current metrics, history charts, top processes, WebSocket updates, and HTTP fallback. |
 | 6 | Completed | Root GitHub Actions CI with Python/C++ validation on Windows and Ubuntu using Python 3.11 and 3.12, Node 24 frontend test/build, Ruff, and stable required checks `python-cpp`, `frontend`, and `quality`. |
+| 7 | Completed | Deterministic evolving mock samples, analytics enrichment and persistence, and one local production entry point serving the API and built Dashboard together. |
 
 ## Implemented Architecture
 
-- **C++:** collector interfaces, deterministic mock data, optional pybind11 bindings, and
+- **C++:** collector interfaces, deterministic evolving mock data, optional pybind11 bindings, and
   fixture-driven Linux parsers. The parsers do not read the live host filesystem.
-- **Python:** mock/native-compatible collection, battery-runtime and process-energy estimation
-  helpers, SQLite storage, and service orchestration. The estimation helpers are not yet connected
-  to the sampling pipeline.
+- **Python:** mock/native-compatible collection, battery-runtime and process-energy enrichment,
+  SQLite storage, service orchestration, and the `perfwatch-server` production entry point.
 - **API:** `GET /health`, `GET /snapshot`, `GET /metrics/recent`, `GET /processes/top`, and
   `WebSocket /ws/snapshot` in the integrated baseline.
-- **Dashboard:** local CPU, memory, battery, package-power, process, history, and connection views
-  in the integrated baseline.
+- **Dashboard:** local CPU, memory, battery, package-power, process, history, and connection views,
+  served with same-origin HTTP and WebSocket paths in production.
 
 ## Platform Direction
 
@@ -43,7 +43,6 @@ Phases 1-6 are complete and form the current mock-driven baseline.
 
 | Phase | Planned scope |
 | --- | --- |
-| 7 | Connect the estimation helpers, make mock timestamps and values evolve deterministically, and add one production entry point for the API and dashboard. |
 | 8 | Implement live Windows collection, the transparent desktop overlay, and Windows production packaging and release artifacts. |
 | 9 | Perform physical Windows hardware validation, browser and overlay visual validation, and a packaged full-flow acceptance run. |
 
@@ -51,9 +50,26 @@ Phase 9 is complete only when the packaged Windows application can collect, esti
 query, stream, display, overlay, shut down, and restart successfully on the available physical
 Windows laptop. See [`docs/roadmap.md`](docs/roadmap.md) for detailed acceptance scope.
 
-## Run the Current Baseline Locally
+## Run Locally
 
-Use the current `main` checkout. Until Phase 7, start the API and dashboard separately.
+Build the Dashboard and run the integrated local production application from the repository root:
+
+```powershell
+cd ui\dashboard
+npm.cmd run build
+cd ..\..
+python -m pip install -e python
+perfwatch-server --host 127.0.0.1 --port 8000
+```
+
+Open `http://127.0.0.1:8000`. For a non-default build layout, pass the directory containing
+`index.html` explicitly:
+
+```powershell
+perfwatch-server --dashboard-directory C:\path\to\dashboard\dist
+```
+
+For development with Vite hot reload, start the API and Dashboard separately.
 
 Set up and start the API:
 
@@ -98,12 +114,8 @@ npm.cmd run build
 
 - The runtime still uses mock/native-compatible mock data; live Windows collection is planned for
   Phase 8.
-- Battery-runtime and process-energy helpers are not connected to sampling, and their results will
-  remain estimates rather than measured watts after Phase 7 integration.
-- The built-in mock timestamp and values are fixed, so realistic evolving history is deferred to
-  Phase 7.
-- The API and dashboard require separate development processes until the Phase 7 production entry
-  point is added.
+- Battery-runtime and process-energy values remain estimates rather than measured watts.
+- The evolving mock samples are deterministic fixtures, not live sensor readings.
 - The transparent overlay and Windows packaging are deferred to Phase 8.
 - Release publication remains deferred to Phase 8.
 - Automated tests do not validate real hardware sensors or browser and overlay visuals; those
