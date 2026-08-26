@@ -26,6 +26,7 @@ dev = [
 
 [project.scripts]
 perfwatch = "perfwatch.cli:main"
+perfwatch-overlay = "perfwatch.overlay.__main__:main"
 perfwatch-server = "perfwatch.server:main"
 
 [tool.setuptools.packages.find]

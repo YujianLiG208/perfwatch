@@ -60,3 +60,42 @@ Physical-hardware accuracy, long-running sensor stability, battery behavior acro
 process ranking accuracy, Dashboard browser review, and complete packaged-flow acceptance remain
 Phase 9 responsibilities. No GPU vendor adapter, installer, service, signing, or Linux live collector
 was added.
+
+## 8B — Native Win32 Overlay
+
+### Scope and implementation
+
+8B used the default three-stage pipeline because it consumes the existing local `/snapshot` API and
+does not change collection, persistence, shared contracts, security, packaging, or release behavior.
+The implementation adds no dependency: Python calls User32 and GDI32 directly through `ctypes`, while
+the already-installed `httpx` client performs network requests on one daemon thread.
+
+`OverlayModel`, `model_from_snapshot`, and `stale_model` define the small display boundary. The model
+shows CPU usage and frequency, memory, battery and remaining time, CPU and battery power, the highest-
+load process, and connection freshness. Missing, invalid, or non-finite measurements render as `N/A`.
+Before the first response it shows `Waiting for service`; after a connection failure it preserves the
+last real model and marks it `STALE`. It never obtains or substitutes mock values.
+
+`Win32OverlayWindow` owns one fixed top-right layered tool window, its callback, and its GDI font. The
+window is topmost, non-activating, and returns `HTTRANSPARENT` for hit testing. The UI thread performs
+only message handling and GDI painting; the HTTP worker publishes models through `PostMessageW`.
+`perfwatch-overlay` and `python -m perfwatch.overlay` accept the snapshot URL, sampling interval, and
+optional parent PID needed by the 8C launcher. No Tk, Qt, tray icon, settings UI, animation, theme
+framework, drag persistence, or global hotkey was added.
+
+### Validation evidence
+
+| Gate | Result |
+| --- | --- |
+| `python -m pytest python/tests/test_overlay.py -q` | `2 passed` |
+| Windows window creation and clean-exit smoke | PASS |
+| `python -m ruff check python/src/perfwatch/overlay python/tests/test_overlay.py` | PASS |
+
+The smoke proves that the real Win32 class and window can be created and shut down cleanly on the
+current Windows environment. It does not claim visual correctness.
+
+### Remaining Phase 9 boundary
+
+Overlay appearance, text layout on physical displays, topmost and click-through interaction, DPI and
+scaling behavior, long-running freshness behavior, and complete packaged overlay lifecycle validation
+remain Phase 9 responsibilities.
