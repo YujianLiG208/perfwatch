@@ -4,9 +4,11 @@ const CHART_SAMPLE_LIMIT = 60;
 
 export function snapshotToMetricSample(snapshot: Snapshot): MetricSample {
   const memoryPercent =
+    snapshot.memory.total_bytes !== null &&
+    snapshot.memory.used_bytes !== null &&
     snapshot.memory.total_bytes > 0
       ? (snapshot.memory.used_bytes / snapshot.memory.total_bytes) * 100
-      : 0;
+      : null;
 
   return {
     timestamp_ms: snapshot.timestamp_ms,
@@ -32,8 +34,21 @@ export function appendMetricSample(
     .slice(-CHART_SAMPLE_LIMIT);
 }
 
-export function formatPercent(value: number): string {
-  return `${value.toFixed(1)}%`;
+export function formatPercent(value: number | null): string {
+  return value === null || !Number.isFinite(value)
+    ? "Unavailable"
+    : `${value.toFixed(1)}%`;
+}
+
+export function formatMetric(
+  value: number | null,
+  unit: string,
+  fractionDigits = 1,
+  divisor = 1,
+): string {
+  return value === null || !Number.isFinite(value)
+    ? "Unavailable"
+    : `${(value / divisor).toFixed(fractionDigits)} ${unit}`;
 }
 
 export function formatDurationSeconds(value: number | null): string {
@@ -46,7 +61,10 @@ export function formatDurationSeconds(value: number | null): string {
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
 
-export function formatBytes(value: number): string {
+export function formatBytes(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) {
+    return "Unavailable";
+  }
   if (value <= 0) {
     return "0 B";
   }

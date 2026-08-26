@@ -14,8 +14,6 @@ add_library(perfwatch_core
     platform/linux/proc_parser.cpp
     platform/linux/power_supply_parser.cpp
     platform/windows/windows_collector.cpp
-    platform/windows/pdh_collector.cpp
-    platform/windows/wmi_fallback.cpp
     gpu/gpu_fallback.cpp
 )
 
@@ -27,6 +25,10 @@ target_include_directories(perfwatch_core
 
 target_compile_features(perfwatch_core PUBLIC cxx_std_17)
 
+if(WIN32)
+    target_link_libraries(perfwatch_core PUBLIC pdh powrprof psapi)
+endif()
+
 enable_testing()
 
 add_executable(perfwatch_cpp_tests
@@ -36,6 +38,7 @@ add_executable(perfwatch_cpp_tests
     tests/test_meminfo_parser.cpp
     tests/test_proc_pid_stat_parser.cpp
     tests/test_power_supply_parser.cpp
+    tests/test_windows_collector.cpp
 )
 target_link_libraries(perfwatch_cpp_tests PRIVATE perfwatch_core)
 target_compile_definitions(perfwatch_cpp_tests

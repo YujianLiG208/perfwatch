@@ -23,19 +23,19 @@
 - PyInstaller is pinned exactly to `6.22.2` in the packaging optional dependency.
 - The only release platform is Windows x64 and the only release files are an unsigned ZIP and SHA-256 file.
 - Keep tests minimal: one focused regression check per non-trivial boundary and one package smoke; do not repeat unrelated full suites at every work item.
-- 8A through 8D use the repository's six stages and stop for owner approval after every stage. 8E is explicitly exempt and runs as one scoped implementation/validation/diff/commit pass.
+- 8A, 8C, and 8D use the repository's risk-based six stages. 8B uses the default three stages. 8E retains the owner-approved scoped implementation/validation/diff/commit exception.
 - Any environment or tooling failure stops the current stage without retry or tool substitution until the owner resolves it and explicitly resumes.
 
 ---
 
-## Mandatory Execution Protocol for 8A–8D
+## Pipeline Classification
 
-1. **Plan only:** restate the work-item outcome, exact files, and exact commands; modify no implementation file; stop for approval.
-2. **Implement visibly:** add the listed focused failing checks, observe RED, implement the smallest change, and run only targeted RED/GREEN commands; stop for approval.
-3. **Validate only:** run only the listed scoped commands; modify no implementation file; stop for approval.
-4. **Update process note:** update `docs/Phase 8 Windows product features.md` with actual commands, exit codes, counts, limitations, and tool paths; stop for approval.
-5. **Review Git diff:** inspect the complete work-item diff, `git diff --check`, generated files, secrets, and machine paths; stop for approval.
-6. **Commit:** stage only the reviewed files, create the listed commit, show its identifier and status, then stop.
+For 8A, 8C, and 8D: plan only; implement visibly; validate only; record durable evidence; review
+the complete diff; commit or hand off. Stage 1 has the mandatory approval stop. Other boundaries
+follow `AGENTS.md` and do not add automatic approval pauses.
+
+For 8B: scope and assess risk; implement and verify iteratively; run the final gate, update durable
+documentation, review the complete diff, and commit when already authorized.
 
 Targeted RED/GREEN commands are permitted during Stage 2. Broader scoped commands belong only to Stage 3. Never combine a stage with the next stage.
 
@@ -492,7 +492,7 @@ git commit -m "feat: collect live Windows metrics"
 - Create: `python/src/perfwatch/overlay/__main__.py`
 - Create: `python/tests/test_overlay.py`
 - Modify: `python/pyproject.toml`
-- Modify in Stage 4: `docs/Phase 8 Windows product features.md`
+- Modify in Stage 3: `docs/Phase 8 Windows product features.md`
 
 **Interfaces:**
 - Produces: `OverlayModel(lines: tuple[str, ...], status: Literal["waiting", "live", "stale"])`
@@ -502,13 +502,13 @@ git commit -m "feat: collect live Windows metrics"
 - Produces: `run_overlay(snapshot_url: str, interval_seconds: float, parent_pid: int | None) -> None`
 - Produces console script: `perfwatch-overlay`
 
-### Stage 1 — Plan only
+### Stage 1 — Scope and assess risk
 
 - [ ] Print the seven-file 8B scope, exact targeted commands, and explicit exclusions: no Tk/Qt/tray/settings/theme/animation.
 - [ ] Confirm the 8A commit exists and status is clean.
-- [ ] Stop and request approval for 8B Stage 2.
+- [ ] Confirm no six-stage trigger applies, then continue unless a stop condition is found.
 
-### Stage 2 — Implement visibly
+### Stage 2 — Implement and verify iteratively
 
 #### Step 2.1 — Write one display-model RED test
 
@@ -572,9 +572,9 @@ window_style = WS_POPUP
 - [ ] Add one Windows-only test that calls `create()`, asserts a nonzero HWND, and closes it in `finally`; skip only when `sys.platform != "win32"`. Do not mock every Win32 function.
 - [ ] Run only `python -m pytest python/tests/test_overlay.py -q`; expected GREEN with model checks and one window smoke.
 - [ ] Run only `python -m ruff check python/src/perfwatch/overlay python/tests/test_overlay.py`; expected GREEN.
-- [ ] Stop and request approval for 8B Stage 3.
+- [ ] Continue to the final gate when the focused checks are green.
 
-### Stage 3 — Validate only
+### Stage 3 — Run final gate and review
 
 - [ ] Run exactly once:
 
@@ -584,28 +584,16 @@ python -m ruff check python/src/perfwatch/overlay python/tests/test_overlay.py
 ```
 
 - [ ] Report test count and the Windows smoke result. Do not run the full Python suite and do not perform visual acceptance.
-- [ ] Stop and request approval for 8B Stage 4.
-
-### Stage 4 — Update process note
-
 - [ ] Append 8B interfaces, exact validation evidence, the no-GUI-framework decision, and the Phase 9 visual/click-through/DPI boundary to the process note.
-- [ ] Stop and request approval for 8B Stage 5.
-
-### Stage 5 — Review Git diff
-
 - [ ] Run `git diff --check`; inspect the complete seven-file 8B diff and process-note delta.
 - [ ] Confirm no screenshots, GUI dependencies, generated bytecode, databases, or build output are included.
-- [ ] Stop and request approval for 8B Stage 6.
-
-### Stage 6 — Commit
-
 - [ ] Commit only reviewed 8B files:
 
 ```powershell
 git commit -m "feat: add native Windows overlay"
 ```
 
-- [ ] Show commit identifier and clean status; stop.
+- [ ] Show commit identifier and clean status.
 
 ---
 
@@ -920,7 +908,7 @@ git diff --check
 ## Final Plan Self-Check
 
 - [ ] Every design requirement maps to exactly one work item: collection/error honesty in 8A, Overlay in 8B, runtime in 8C, ZIP/checksum in 8D, and release/docs in 8E.
-- [ ] 8A–8D each contain six stops; 8E contains none.
+- [ ] 8A, 8C, and 8D use six stages; 8B uses three stages; 8E retains its approved exception.
 - [ ] Mock selection is explicit in native wrapper, product launcher, package smoke, and documentation.
 - [ ] Nullable names and signatures match from C++ optionals through Python `None`, SQLite NULL, TypeScript unions, Dashboard formatters, and Overlay model.
 - [ ] No task adds a new endpoint, GUI framework, installer, service, updater, signer, Linux live collector, or GPU adapter.

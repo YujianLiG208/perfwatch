@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import time
 from typing import Any
 
@@ -19,6 +19,7 @@ class ServiceState:
     current_snapshot: dict[str, Any] | None = None
     sampling_task: asyncio.Task[None] | None = None
     _stop_event: asyncio.Event | None = None
+    _reported_collection_issues: set[str] = field(default_factory=set, init=False, repr=False)
 
     async def start(self) -> None:
         if self.sampling_task is not None and not self.sampling_task.done():
@@ -50,6 +51,32 @@ class ServiceState:
         except Exception as error:
             self._record_error(source="collector", error=error)
             return
+
+        collection_issues = snapshot.pop("_collection_issues", [])
+        if isinstance(collection_issues, list):
+            for issue in collection_issues:
+                if not isinstance(issue, dict):
+                    continue
+                code = issue.get("code")
+                message = issue.get("message")
+                if (
+                    not isinstance(code, str)
+                    or not code
+                    or not isinstance(message, str)
+                    or not message
+                    or code in self._reported_collection_issues
+                ):
+                    continue
+                try:
+                    self.repository.add_event(
+                        timestamp_ms=int(time.time() * 1000),
+                        level="warning",
+                        source="collector",
+                        message=message,
+                    )
+                except Exception:
+                    continue
+                self._reported_collection_issues.add(code)
 
         try:
             enrich_snapshot(snapshot)

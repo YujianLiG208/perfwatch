@@ -4,6 +4,7 @@ import {
   appendMetricSample,
   formatBytes,
   formatDurationSeconds,
+  formatMetric,
   formatPercent,
   snapshotToMetricSample,
 } from "./data";
@@ -44,8 +45,11 @@ describe("snapshot data mapping", () => {
 describe("metric formatting", () => {
   it("formats percentages and binary byte values", () => {
     expect(formatPercent(42.54)).toBe("42.5%");
+    expect(formatPercent(null)).toBe("Unavailable");
     expect(formatBytes(268_435_456)).toBe("256 MB");
     expect(formatBytes(0)).toBe("0 B");
+    expect(formatBytes(null)).toBe("Unavailable");
+    expect(formatMetric(null, "W")).toBe("Unavailable");
   });
 
   it.each([

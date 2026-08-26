@@ -72,38 +72,37 @@ def test_mock_snapshot_rejects_negative_index() -> None:
 def _fake_native_module(calls: list[int]) -> ModuleType:
     module = ModuleType("perfwatch_native")
 
-    def fake_get_mock_snapshot(sample_index: int = 0) -> dict[str, object]:
-        calls.append(sample_index)
-        return get_mock_snapshot(sample_index)
+    class FakeWindowsCollector:
+        def __init__(self) -> None:
+            self.sample_index = 0
 
-    setattr(module, "get_mock_snapshot", fake_get_mock_snapshot)
+        def collect(self) -> dict[str, object]:
+            calls.append(self.sample_index)
+            snapshot = get_mock_snapshot(self.sample_index)
+            self.sample_index += 1
+            return snapshot
+
+    setattr(module, "WindowsCollector", FakeWindowsCollector)
     return module
 
 
-def test_native_get_snapshot_forwards_optional_index(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_native_wrapper_uses_stateful_windows_collector(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[int] = []
     monkeypatch.setitem(sys.modules, "perfwatch_native", _fake_native_module(calls))
 
     assert get_snapshot()["timestamp_ms"] == 1_710_000_000_000
-    assert get_snapshot(3)["timestamp_ms"] == 1_710_000_003_000
-    assert calls == [0, 3]
-
-
-def test_native_collectors_advance_independently(monkeypatch: pytest.MonkeyPatch) -> None:
-    calls: list[int] = []
-    monkeypatch.setitem(sys.modules, "perfwatch_native", _fake_native_module(calls))
     first_collector = NativeCollector()
     second_collector = NativeCollector()
 
     assert first_collector.collect()["timestamp_ms"] == 1_710_000_000_000
     assert first_collector.collect()["timestamp_ms"] == 1_710_000_001_000
     assert second_collector.collect()["timestamp_ms"] == 1_710_000_000_000
-    assert calls == [0, 1, 0]
+    assert calls == [0, 0, 1, 0]
 
 
-def test_native_collector_fallback_advances(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_native_collector_never_falls_back_to_mock(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "perfwatch_native", None)
     collector = NativeCollector()
 
-    assert collector.collect()["timestamp_ms"] == 1_710_000_000_000
-    assert collector.collect()["timestamp_ms"] == 1_710_000_001_000
+    with pytest.raises(RuntimeError, match="live Windows collector unavailable"):
+        collector.collect()

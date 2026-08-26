@@ -1,41 +1,41 @@
 export interface CpuMetrics {
-  usage_percent: number;
-  frequency_mhz: number;
-  package_power_watts: number;
-  temperature_celsius: number;
+  usage_percent: number | null;
+  frequency_mhz: number | null;
+  package_power_watts: number | null;
+  temperature_celsius: number | null;
 }
 
 export interface MemoryMetrics {
-  total_bytes: number;
-  used_bytes: number;
+  total_bytes: number | null;
+  used_bytes: number | null;
 }
 
 export interface BatteryMetrics {
   available: boolean;
-  charging: boolean;
-  percent: number;
-  power_watts: number;
-  energy_remaining_wh: number;
+  charging: boolean | null;
+  percent: number | null;
+  power_watts: number | null;
+  energy_remaining_wh: number | null;
   estimated_remaining_seconds: number | null;
 }
 
 export interface GpuMetrics {
   available: boolean;
   vendor: string;
-  usage_percent: number;
-  vram_total_bytes: number;
-  vram_used_bytes: number;
-  power_watts: number;
-  temperature_celsius: number;
+  usage_percent: number | null;
+  vram_total_bytes: number | null;
+  vram_used_bytes: number | null;
+  power_watts: number | null;
+  temperature_celsius: number | null;
 }
 
 export interface ProcessSample {
   timestamp_ms?: number;
   pid: number;
   name: string;
-  cpu_percent: number;
-  rss_bytes: number;
-  vram_bytes: number;
+  cpu_percent: number | null;
+  rss_bytes: number | null;
+  vram_bytes: number | null;
   estimated_power_score: number | null;
 }
 
@@ -50,11 +50,11 @@ export interface Snapshot {
 
 export interface MetricSample {
   timestamp_ms: number;
-  cpu_percent: number;
-  memory_percent: number;
-  cpu_power_watts: number;
-  battery_percent: number;
-  battery_power_watts: number;
+  cpu_percent: number | null;
+  memory_percent: number | null;
+  cpu_power_watts: number | null;
+  battery_percent: number | null;
+  battery_power_watts: number | null;
 }
 
 export interface HealthResponse {

@@ -21,15 +21,14 @@ Phase 8 is divided into five independently reviewable work items:
 | Work item | Deliverable | Process |
 | --- | --- | --- |
 | 8A | Live Windows CPU, memory, battery, and process collection | Repository six-stage pipeline |
-| 8B | Python `ctypes` native Win32 overlay | Repository six-stage pipeline |
+| 8B | Python `ctypes` native Win32 overlay | Repository default three-stage pipeline |
 | 8C | PyInstaller Windows directory-mode runtime | Repository six-stage pipeline |
 | 8D | Versioned Windows x64 ZIP and SHA-256 checksum | Repository six-stage pipeline |
 | 8E | GitHub Release automation and documentation closeout | One scoped implementation and validation pass; exempt from the six-stage pipeline |
 
-For 8A through 8D, the mandatory order is plan only, visible implementation, validation only,
-process-note update, scoped Git diff review, and commit. Each stage stops and reports before the
-next stage begins. Work item 8E does not require those six separate stages, but its workflow and
-documentation changes still receive one focused validation and a scoped diff review before commit.
+Work items 8A, 8C, and 8D use the repository's risk-based six-stage pipeline. Work item 8B is an
+isolated reversible UI change and uses the default three-stage pipeline. Work item 8E retains the
+owner-approved one-pass exception, with focused validation and scoped diff review before commit.
 
 ## Global Constraints
 
