@@ -1,112 +1,155 @@
 # Project Implementation Code of Conduct
 
-These instructions apply to every implementation phase and every agent working
-in this repository.
+These instructions apply to every agent and work item in this repository,
+including Phase 8 and Phase 9.
 
-## Execution Visibility Requirements
+## Core Rules
 
-Work in foreground-observable mode.
+- Prefer the smallest direct implementation that satisfies the current work
+  item. Do not add speculative abstractions or dependencies.
+- Inspect the affected flow before editing it. Preserve unrelated user changes.
+- Keep work observable with a short opening plan, milestone updates, exact
+  validation commands, and a final scoped-diff summary. Do not narrate every
+  routine command or pause after an arbitrary number of commands.
+- Use the minimum sufficient validation: one focused regression check for each
+  non-trivial behavior, plus the relevant final gate for the affected area.
+- Report failures honestly. A program-code failure may be diagnosed and fixed
+  within the approved scope; an environment or tooling failure requires a stop
+  as defined below.
 
-Before making changes:
+## Select the Pipeline Per Work Item
 
-1. Print a short execution plan.
-2. List the files expected to be read.
-3. List the files expected to be created or modified.
-4. List the commands expected to be run.
+Classify each work item before changing implementation files. Phase membership,
+file count, or line count alone does not determine the pipeline.
 
-During implementation:
+Use the default three-stage pipeline unless the work item meets the six-stage
+risk criteria below. If risk becomes apparent during implementation, stop,
+report the new risk, and upgrade the remaining work to the six-stage pipeline.
 
-1. Before each command, print the exact command.
-2. After each command, summarize the result.
-3. If a command fails, print the failure, explain the likely cause, and do not
-   hide it.
-4. Do not continue silently after failures.
+## Default Three-Stage Pipeline
 
-For code changes:
+Use this pipeline for ordinary, reversible work with a bounded impact:
 
-1. After editing each file, print a concise summary of what changed.
-2. Show the important function names or CLI arguments added.
-3. Do not dump entire files unless necessary.
+1. **Scope and assess risk.** Inspect the relevant code and callers, state the
+   intended outcome and acceptance check, list the expected files, and confirm
+   that no six-stage trigger applies. A small change needs only a short plan.
+2. **Implement and verify iteratively.** Edit the smallest logical group of
+   files and run focused checks while working. Fix in-scope program-code
+   failures in this stage; do not create an administrative return loop between
+   editing and focused validation.
+3. **Run the final gate and review.** Run the relevant final validation, inspect
+   the complete scoped Git diff, update durable product or operator
+   documentation only when behavior changed, and report the result. Commit only
+   when the owner has requested or approved a local commit.
 
-For validation:
+The three stages are milestones, not mandatory approval pauses. Continue
+through them autonomously unless a stop condition below applies.
 
-1. Run validation commands in the terminal.
-2. Print the exact command used.
-3. Print a PASS or FAIL result.
-4. Generate or update the report files.
-5. End with a final checklist.
+Typical three-stage work includes isolated UI changes, mock or fixture updates,
+focused parser or service bug fixes with a regression check, tests, lint
+configuration, documentation synchronization, backward-compatible optional API
+fields, and small reversible refactors.
 
-Do not perform large hidden batches of work. Do not claim completion without
-showing commands and validation output.
+## Six-Stage Risk Criteria
 
-## Interaction Rules
+Use the six-stage pipeline when any hard trigger applies:
 
-Do not perform a full phase as one hidden batch.
+- database schema migration, destructive cleanup, retention behavior, or
+  persistent-format changes;
+- authentication, authorization, secrets, encryption, privacy, or another
+  security boundary;
+- installer, system service, automatic update, artifact signing, release
+  publication, or production deployment;
+- a breaking API, configuration, database, serialization, or persisted-data
+  contract;
+- concurrency, transaction, or crash-recovery behavior that can leave durable
+  state inconsistent;
+- an operation whose failure can cause material data loss, security exposure,
+  financial impact, or an unrecoverable external change.
 
-Work in small visible increments:
+Also use it when at least two of these risk indicators apply:
 
-1. Inspect files.
-2. Report findings.
-3. Edit one logical group of files.
-4. Report changes.
-5. Run one validation command.
-6. Report the result.
-7. Continue.
+- the change spans three or more components, languages, or runtimes;
+- multiple real callers or external consumers depend on the changed contract;
+- rollback is difficult or cannot restore the previous state completely;
+- validation requires physical hardware, an operating-system matrix, or an
+  external service;
+- a material requirement or acceptance boundary must be frozen before coding;
+- the result is a distributable or release-gating artifact.
 
-After every two or three commands, pause and summarize the current state.
+When uncertain, state the evidence for the classification. Do not upgrade a
+task merely because it is large, and do not keep the three-stage pipeline when
+a hard trigger is present.
 
-If any command fails, stop and ask for confirmation before changing strategy,
-unless the fix is limited to the current workspace and clearly safe.
+## High-Risk Six-Stage Pipeline
 
-## Environment and Tooling Failure Stop Rule
+For a work item selected as high risk, use these stages in order:
 
-If a failure is unrelated to the program code, stop the current stage
-immediately. This includes an environment that is not loaded correctly,
-permission errors, dependency or tool startup timeouts, an undiscoverable
-compiler or SDK, and a shell environment mismatch.
+1. **Plan only.** Inspect the full affected flow and callers. Define scope,
+   interfaces, risks, rollback or recovery, validation, documentation, and
+   exact commit or delivery boundaries. Do not modify implementation files.
+2. **Implement visibly.** Make small scoped changes and run focused checks, but
+   do not perform the final acceptance gate or unrelated cleanup.
+3. **Validate only.** Run the approved acceptance commands without changing
+   implementation files. An in-scope program-code failure returns the work to
+   Stage 2; after the fix, rerun the affected validation before continuing.
+4. **Record durable evidence.** Update the applicable process note with risk
+   decisions, migration or recovery instructions, validation evidence, and
+   remaining limitations. Do not record a command-by-command transcript.
+5. **Review the complete diff.** Check all scoped changes, compatibility,
+   generated output, secrets, rollback assumptions, validation evidence, and
+   commit boundaries. Resolve findings by returning to the appropriate stage.
+6. **Commit or hand off.** Commit only the reviewed scope when a local commit is
+   already authorized, then report its identifier and worktree state. Otherwise
+   stop and present the reviewed changes for owner approval. A local commit does
+   not authorize push, release, deployment, publication, or another external
+   write.
 
-After such a failure:
+Stage 1 has a mandatory approval stop before Stage 2. Stage 5 has an approval
+stop only when the commit was not already authorized or when the next action is
+external, destructive, or release-affecting. The other stage boundaries require
+a concise progress report, not an automatic wait for owner input.
 
-1. Do not retry automatically or run any diagnostic command.
-2. Do not switch shells, directories, flags, or tools; install dependencies;
-   create alternative build or test directories; or collect additional logs.
-3. Report the blocked command, the exact error, and why it appears to be an
-   environment or tooling problem rather than a program-code problem.
-4. Provide a concise manual troubleshooting plan with the exact PowerShell
-   commands, working directory, and expected results for the owner to use.
-5. Wait until the owner reports that the issue is resolved and explicitly
-   authorizes work to resume.
-6. On resume, rerun only the originally blocked command. Continue the stage
-   only after that command succeeds.
+## Stop Conditions
 
-If it is unclear whether a failure comes from the program code or the
-environment, treat it as an environment failure and stop.
+Stop and request owner direction when:
 
-## Required Pipeline
+- an unresolved ambiguity would materially change behavior, an interface, data
+  format, acceptance criteria, or scope;
+- a discovered requirement expands the approved work materially;
+- the six-stage plan reaches the Stage 1 approval gate;
+- a commit has not been authorized, or the next action would push, publish,
+  deploy, release, modify an external system, destroy data, or be difficult to
+  recover;
+- a new production dependency or elevated permission is required and was not
+  already approved;
+- an environment or tooling failure occurs, including a permission error,
+  dependency or tool startup failure, undiscoverable compiler or SDK, shell
+  mismatch, or unavailable required hardware.
 
-Do not complete an entire work item in one pass. Use the
-following pipeline in this exact order:
+For an environment or tooling failure, do not retry, switch tools or shells,
+install dependencies, change flags, create alternate build directories, or run
+further diagnostics. Report the blocked command, exact error, working
+directory, likely environmental cause, and concise owner-run recovery commands.
+Resume only after the owner reports resolution and authorizes continuation;
+then rerun only the originally blocked command.
 
-1. Plan only.
-2. Implement visibly.
-3. Validate only.
-4. Update the process note.
-5. Review the Git diff.
-6. Commit.
+Do not stop merely for read-only inspection, safe in-scope local edits, focused
+tests, a diagnosable program-code failure, or a routine milestone update.
 
-Treat each pipeline item as a separate stage:
+## Phase 8 and Phase 9 Application
 
-- Do not combine, skip, or reorder stages.
-- Perform only the work permitted by the current stage.
-- Report the current stage's output before entering the next stage.
-- During `Plan only`, do not modify implementation files.
-- During `Implement visibly`, make changes in small observable increments and
-  do not run the full validation suite.
-- During `Validate only`, do not make implementation changes. If validation
-  fails, report the failure and return to the appropriate earlier stage.
-- During `Update the process note`, record implementation and validation
-  results in the project's applicable report or process-note file.
-- During `Review the Git diff`, inspect and report the complete scoped diff
-  before committing.
-- During `Commit`, commit only the reviewed scoped changes and report the
-  resulting commit identifier.
+Apply the classification independently to every Phase 8 and Phase 9 work item:
+
+- Phase 8 live Windows collection may use three stages for a bounded collector
+  implementation, but uses six when it changes shared contracts, spans multiple
+  runtimes, or requires physical-hardware release evidence.
+- Phase 8 packaging, release artifacts, checksum publication, installers,
+  services, signing, and publication use six stages.
+- An isolated transparent-overlay UI change normally uses three stages; system
+  integration, packaged startup, privileges, or shared-contract changes use six.
+- Phase 9 packaged full-flow and physical-hardware release acceptance use six
+  stages. An isolated visual check or documentation correction uses three.
+
+The purpose of the six-stage path is risk control and durable traceability. It
+must not be used as a default ceremony for ordinary work.
