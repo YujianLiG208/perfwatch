@@ -206,3 +206,54 @@ The checksum file records:
 The ZIP is an unsigned Windows x64 archive. The SHA-256 file provides integrity verification, not
 publisher identity or code-signing trust. No installer, signing system, upload, GitHub Release, or
 other publication occurred in 8D; publication and documentation closeout remain 8E work.
+
+## 8E — GitHub Release and Documentation Closeout
+
+### Release automation
+
+8E uses the owner-approved single scoped pass rather than the six-stage pipeline. The Windows-only
+workflow reads version `0.1.0` from `python/pyproject.toml`, rejects non-semantic versions, and for a
+tag run requires the exact tag `v0.1.0`. `build-windows` runs the existing 8C build/smoke and 8D
+archive scripts on `windows-latest`, then uploads only the ZIP and checksum. Manual dispatch stops
+after artifact upload.
+
+The dependent `publish` job runs only after a successful pushed tag build. Only that job receives
+`contents: write`; it uses the repository `GITHUB_TOKEN` and `gh release create`. No PAT, installer,
+signing key, or updater was added. The workflow file must reach GitHub before it can run, and this
+local implementation does not claim an unobserved workflow run or published Release.
+
+### Phase 8 implementation commits
+
+| Work item | Commit |
+| --- | --- |
+| 8A live Windows collection | `eac1db5b6d26f1de63201c83289356fec0ea0405` |
+| 8B native Win32 Overlay | `1678a085882090acab852a9f25c09641ec39d091` |
+| 8C Windows application assembly | `652d17f43aa0114ca9f6fbb8d6f2242452286418` |
+| 8D ZIP and SHA-256 | `49d78b701363d39c6a20ecce3ec3f41205f64d7d` |
+
+The earlier sections retain the actual 8A–8D commands and outcomes, validated MSVC/Ninja/Python/
+pybind11 paths, PyInstaller 6.22.2 version, 88,274,952-byte directory bundle, 40,374,135-byte ZIP,
+and SHA-256 `1cdf2ad963a0a1bd170ffdc9569057b6deb0f65d426b7272fe2c0e8196d0290e`.
+
+### Local closeout evidence
+
+8E ran only the approved static consistency group:
+
+```powershell
+python -c "from pathlib import Path; p=Path('.github/workflows/release.yml').read_text(encoding='utf-8'); required=('workflow_dispatch','windows-latest','contents: write','gh release create','create_windows_release.ps1'); assert all(value in p for value in required)"
+rg -n "Phase 8|WindowsCollector|ctypes|PyInstaller 6.22.2|SHA-256|unsigned|Phase 9" perfwatch\README.md perfwatch\docs
+git diff --check
+```
+
+All three commands exited with code zero. The first found every required workflow marker, the second
+confirmed the Phase 8/9 terminology across project documentation, and the final check found no diff
+errors (only Git's existing LF-to-CRLF working-copy notices). No application suite or remote GitHub
+workflow was run for 8E.
+
+### Remaining Phase 9 boundary
+
+Phase 8 establishes implementation, package composition, one-machine capability, and local release
+artifact integrity. Phase 9 retains physical sensor accuracy and stability, battery charge-state
+behavior, Dashboard browser visuals, Overlay appearance/topmost/click-through/DPI behavior, and the
+packaged live flow through collection, estimation, persistence, queries, WebSocket streaming,
+Dashboard/Overlay display, shutdown, and restart.

@@ -20,11 +20,31 @@ At documentation-capture time, the latest successful live validation run was:
 - Run: https://github.com/YujianLiG208/perfwatch/actions/runs/32549128595
 - Head SHA: `7779936240fe72095a922b5a955cdb8913be1877`
 
-That run validates workflow commit `7779936240fe72095a922b5a955cdb8913be1877`. The later
-documentation-only commit `78169a0b705a9477084eb7d5b2a4ea4b815b18d7` must receive its own CI
-rerun before final completion; no result or URL is recorded for that later rerun yet.
+That run is historical evidence for workflow commit `7779936240fe72095a922b5a955cdb8913be1877`;
+it is not evidence for the Phase 8 release workflow.
 
-Packaging and release automation remain deferred to Phase 8.
+## Windows Release Workflow
+
+`.github/workflows/release.yml` has two jobs. `build-windows` runs on `windows-latest` with Python
+3.12 and Node 24, installs the pinned packaging dependencies, resolves Visual Studio, Ninja, Python,
+and pybind11 paths, then executes the existing package build, explicit-mock smoke, and release archive
+scripts. It uploads only the versioned ZIP and `.zip.sha256`, never the directory bundle.
+
+The workflow accepts pushed tags matching `v*.*.*` and manual dispatch. Before building, it requires
+the project version to be semantic; tag runs additionally require the exact `vMAJOR.MINOR.PATCH` tag
+to equal `v` plus the version in `python/pyproject.toml`. Manual dispatch can build and upload the two
+artifacts but cannot run the `publish` job.
+
+Only `publish` receives `contents: write`. It uses the repository `GITHUB_TOKEN`, downloads the build
+artifact, and invokes `gh release create` for these unsigned Windows x64 files:
+
+- `perfwatch-0.1.0-windows-x64.zip`
+- `perfwatch-0.1.0-windows-x64.zip.sha256`
+
+No PAT or signing secret is required. Build, smoke, version, or archive failure prevents publication.
+The checksum verifies integrity but not publisher identity. The committed workflow must reach GitHub
+before manual dispatch can use it, and tag publication requires a tag containing that workflow.
+Local static inspection does not claim a remote workflow run or published release.
 
 Local sandbox validation used Ninja with MSVC, an explicit `pybind11_DIR`, and Vitest threads.
 Those accommodations address the local sandbox environment and are not CI requirements.

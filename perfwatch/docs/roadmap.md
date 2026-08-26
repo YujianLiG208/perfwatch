@@ -1,6 +1,6 @@
 # Roadmap
 
-Phases 1-7 are complete and form the current integrated, mock-driven application baseline.
+Phases 1-8 are complete and form the current Windows product baseline.
 
 ## Platform Priority
 
@@ -30,19 +30,19 @@ hardware environment available to the project owner.
    - deterministic evolving mock timestamps and values;
    - battery-runtime and process-energy enrichment through persistence, API/WebSocket, and Dashboard;
    - one production entry point serving the FastAPI API and built Dashboard together.
+8. Completed Phase 8 Windows product scope:
+   - live nullable CPU, memory, battery, and process collection through native Windows APIs;
+   - a topmost click-through Win32 Overlay implemented with Python `ctypes`, User32, and GDI;
+   - a PyInstaller 6.22.2 directory application with explicit mock selection and LocalAppData
+     persistence;
+   - a verified unsigned Windows x64 ZIP and lowercase SHA-256 file;
+   - a tag-gated GitHub Actions workflow that builds on Windows and publishes only matching semantic
+     version tags. Manual dispatch builds artifacts without publishing.
 
 Phase 7D is the documentation and full-acceptance closeout for these three feature deliveries. It is
 not a fourth Phase 7 feature.
 
-## Planned Phases
-
-### Phase 8: Windows Product Features
-
-- Implement live Windows CPU, memory, battery, and process collection using appropriate native,
-  PDH, or WMI paths. GPU vendor-specific collection remains deferred.
-- Implement the desktop transparent overlay against the local service.
-- Add production runtime assembly and Windows packaging, including the application, dashboard
-  assets, SQLite schema, required native files, release artifact, and checksum publication.
+## Remaining Phase
 
 ### Phase 9: Windows Hardware and Visual Validation
 
