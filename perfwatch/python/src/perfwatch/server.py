@@ -3,14 +3,18 @@ from __future__ import annotations
 from argparse import ArgumentParser
 from collections.abc import Sequence
 from pathlib import Path
+import sys
 
 import uvicorn
 
 from perfwatch.api.app import create_app
+from perfwatch.runtime import bundle_root
 
 
 def default_dashboard_directory() -> Path:
-    return Path(__file__).resolve().parents[3] / "ui" / "dashboard" / "dist"
+    if getattr(sys, "frozen", False):
+        return bundle_root() / "dashboard"
+    return bundle_root() / "ui" / "dashboard" / "dist"
 
 
 def create_parser() -> ArgumentParser:

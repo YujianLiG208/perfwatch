@@ -99,3 +99,66 @@ current Windows environment. It does not claim visual correctness.
 Overlay appearance, text layout on physical displays, topmost and click-through interaction, DPI and
 scaling behavior, long-running freshness behavior, and complete packaged overlay lifecycle validation
 remain Phase 9 responsibilities.
+
+## 8C — Windows Directory-Mode Runtime
+
+### Scope and implementation
+
+8C used the six-stage pipeline because it adds the product entry point, coordinates Uvicorn and the
+Overlay child process, resolves frozen resources and mutable data, and defines the distributable
+directory layout. `perfwatch.runtime` reuses the existing `create_app()`, `Settings`, Dashboard, native
+collector, and Overlay boundaries; it adds no launcher or service abstraction.
+
+The public `perfwatch` entry point accepts host, port, database, Dashboard, explicit mock, and
+no-Overlay options. The packaged default stores mutable data under `%LOCALAPPDATA%\PerfWatch`, while
+Dashboard, SQLite schema, and the native extension remain in the frozen bundle. One non-daemon thread
+runs Uvicorn, the main console thread owns startup and shutdown, and an optional child process runs the
+same executable in private Overlay mode. Windows `SIGBREAK` is converted to the existing
+`KeyboardInterrupt` cleanup path so the targeted Ctrl+Break smoke exits with code zero.
+
+PyInstaller 6.22.2 creates one console directory product with `_internal` contents. The build script
+requires validated Ninja, Visual Studio shell, pybind11 CMake directory, and Python paths; it removes
+only the explicit repository-owned product and PyInstaller work directories before rebuilding.
+
+### Build evidence
+
+The validated command was:
+
+```powershell
+& .\scripts\build_windows_package.ps1 `
+  -NinjaPath 'C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja\ninja.exe' `
+  -VsDevShellPath 'C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\Launch-VsDevShell.ps1' `
+  -Pybind11Directory 'C:\Users\Yujian Li\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\site-packages\pybind11\share\cmake\pybind11' `
+  -PythonPath 'C:\Users\Yujian Li\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe'
+```
+
+| Gate | Result |
+| --- | --- |
+| Focused runtime/server tests | `6 passed` |
+| Focused Ruff check | PASS |
+| Dashboard TypeScript and Vite build | PASS; existing bundle-size and plugin-timing advisories retained |
+| Native Release configure/build | PASS; Ninja reported no work required |
+| PyInstaller | `6.22.2`, PASS in approximately 171.7 seconds |
+| Complete build wall time | Approximately 3 minutes 20 seconds |
+| Packaged `/health`, `/snapshot`, and `/` smoke | HTTP 200 for all three endpoints |
+| Explicit mock assertion | PASS; deterministic baseline timestamp observed |
+| Ctrl+Break shutdown | PASS; Uvicorn shutdown completed and process exit code was zero |
+| Required directory layout | PASS |
+
+The final `dist/perfwatch` directory contained 814 files totaling 88,274,952 bytes (84.19 MiB).
+The product root contained `perfwatch.exe`, `README.md`, and `LICENSE`; `_internal` contained
+`perfwatch_native.cp312-win_amd64.pyd`, `dashboard/index.html`, and
+`perfwatch/storage/schema.sql`.
+
+The final smoke ran outside the Codex filesystem sandbox because the packaged product intentionally
+writes its database to real LocalAppData. A direct SQLite probe and Windows ACL inspection confirmed
+that the target directory itself was writable; this was a test-harness boundary, not a product
+fallback or a change to the packaged data location.
+
+### Distribution and Phase 9 boundary
+
+8C produces an unsigned directory-mode application only. It adds no installer, signing, service,
+startup registration, ZIP, checksum, or release publication; ZIP and SHA-256 remain 8D work. The
+automated mock smoke proves bundle composition, HTTP behavior, and clean shutdown, but physical live
+sensor stability, Overlay appearance and interaction, and the complete packaged live workflow remain
+Phase 9 responsibilities.
