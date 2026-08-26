@@ -162,3 +162,47 @@ startup registration, ZIP, checksum, or release publication; ZIP and SHA-256 rem
 automated mock smoke proves bundle composition, HTTP behavior, and clean shutdown, but physical live
 sensor stability, Overlay appearance and interaction, and the complete packaged live workflow remain
 Phase 9 responsibilities.
+
+## 8D — ZIP and SHA-256
+
+### Scope and implementation
+
+8D used the six-stage pipeline because it creates the release-gating Windows artifact. It consumes
+the already validated 8C `dist/perfwatch` directory without rebuilding it. The release script reads
+version `0.1.0` from `python/pyproject.toml`, requires the approved product layout, and uses only
+PowerShell archive, hash, and temporary-directory facilities.
+
+Before replacing output, the script limits removal to the exact versioned ZIP and checksum paths.
+It writes a lowercase SHA-256 followed by two spaces and the ZIP filename. It then expands the ZIP
+into one generated directory under the system temporary directory, checks the same required product
+files and single native module, recomputes the archive hash, verifies the checksum line, and removes
+only that validated temporary directory.
+
+### Archive evidence
+
+The archive command was executed once:
+
+```powershell
+& .\scripts\create_windows_release.ps1 -InputDirectory .\dist\perfwatch -OutputDirectory .\release
+```
+
+| Evidence | Result |
+| --- | --- |
+| Command exit code | `0` |
+| Archive | `perfwatch-0.1.0-windows-x64.zip` |
+| Archive size | `40,374,135` bytes |
+| SHA-256 | `1cdf2ad963a0a1bd170ffdc9569057b6deb0f65d426b7272fe2c0e8196d0290e` |
+| Checksum file | `perfwatch-0.1.0-windows-x64.zip.sha256` |
+| Extraction and required-layout check | PASS |
+
+The checksum file records:
+
+```text
+1cdf2ad963a0a1bd170ffdc9569057b6deb0f65d426b7272fe2c0e8196d0290e  perfwatch-0.1.0-windows-x64.zip
+```
+
+### Distribution limitation
+
+The ZIP is an unsigned Windows x64 archive. The SHA-256 file provides integrity verification, not
+publisher identity or code-signing trust. No installer, signing system, upload, GitHub Release, or
+other publication occurred in 8D; publication and documentation closeout remain 8E work.
