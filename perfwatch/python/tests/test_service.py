@@ -27,6 +27,15 @@ class FailingCollector:
         raise RuntimeError("collector unavailable")
 
 
+class IssueCollector:
+    def collect(self) -> dict:
+        snapshot = deepcopy(get_mock_snapshot())
+        snapshot["_collection_issues"] = [
+            {"code": "cpu_power_unavailable", "message": "CPU package power is unavailable"}
+        ]
+        return snapshot
+
+
 class TrackingRepository(SnapshotRepository):
     def __init__(self, database_path) -> None:
         super().__init__(database_path)
@@ -85,6 +94,28 @@ def test_sample_once_enriches_current_and_persisted_snapshot(tmp_path) -> None:
         ] == pytest.approx(0.1)
         assert repository.snapshots == [service.current_snapshot]
         assert repository.snapshots[0] is service.current_snapshot
+
+    asyncio.run(exercise())
+
+
+def test_collection_issues_are_removed_and_recorded_once(tmp_path) -> None:
+    async def exercise() -> None:
+        repository = RecordingRepository()
+        service = ServiceState(
+            settings=Settings(database_path=tmp_path / "issues.sqlite3"),
+            collector=IssueCollector(),
+            repository=repository,
+        )
+
+        await service.sample_once()
+        await service.sample_once()
+
+        assert len(repository.events) == 1
+        assert repository.events[0]["level"] == "warning"
+        assert repository.events[0]["source"] == "collector"
+        assert all("_collection_issues" not in item for item in repository.snapshots)
+        assert service.current_snapshot is not None
+        assert "_collection_issues" not in service.current_snapshot
 
     asyncio.run(exercise())
 

@@ -34,14 +34,42 @@ function installFetch(
   processCount = 1,
   snapshotStatus = 200,
   processScore: number | null = snapshotFixture.top_processes[0].estimated_power_score,
+  unavailable = false,
 ): ReturnType<typeof vi.fn> {
   const processes = Array.from({ length: processCount }, (_, index) => ({
     ...snapshotFixture.top_processes[0],
     pid: 1_000 + index,
     name: `process-${index}`,
+    cpu_percent: unavailable ? null : snapshotFixture.top_processes[0].cpu_percent,
+    rss_bytes: unavailable ? null : snapshotFixture.top_processes[0].rss_bytes,
+    vram_bytes: unavailable ? null : snapshotFixture.top_processes[0].vram_bytes,
     estimated_power_score: processScore === null ? null : processScore - index / 100,
   }));
-  const snapshot = { ...snapshotFixture, top_processes: processes };
+  const snapshot = {
+    ...snapshotFixture,
+    cpu: unavailable
+      ? {
+          usage_percent: null,
+          frequency_mhz: null,
+          package_power_watts: null,
+          temperature_celsius: null,
+        }
+      : snapshotFixture.cpu,
+    memory: unavailable
+      ? { total_bytes: null, used_bytes: null }
+      : snapshotFixture.memory,
+    battery: unavailable
+      ? {
+          available: true,
+          charging: null,
+          percent: null,
+          power_watts: null,
+          energy_remaining_wh: null,
+          estimated_remaining_seconds: null,
+        }
+      : snapshotFixture.battery,
+    top_processes: processes,
+  };
 
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
@@ -116,6 +144,16 @@ describe("App", () => {
 
     expect(await screen.findByText("process-0")).toBeInTheDocument();
     expect(screen.getAllByText("Unavailable")).toHaveLength(2);
+  });
+
+  it("renders unavailable measurements without substituting zero", async () => {
+    installFetch(1, 200, null, true);
+    render(<App />);
+
+    expect(await screen.findByText("process-0")).toBeInTheDocument();
+    expect(screen.getByText("Unavailable / Unavailable")).toBeInTheDocument();
+    expect(screen.getByText("Battery signal Unavailable")).toBeInTheDocument();
+    expect(screen.queryByText("0.0 W")).not.toBeInTheDocument();
   });
 
   it("renders a fatal snapshot error", async () => {

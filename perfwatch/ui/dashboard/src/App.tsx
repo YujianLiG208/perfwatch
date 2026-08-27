@@ -2,7 +2,12 @@ import { MetricCharts } from "./components/MetricCharts";
 import { MetricCard } from "./components/MetricCard";
 import { ProcessTable } from "./components/ProcessTable";
 import { StatusBar } from "./components/StatusBar";
-import { formatBytes, formatDurationSeconds, formatPercent } from "./data";
+import {
+  formatBytes,
+  formatDurationSeconds,
+  formatMetric,
+  formatPercent,
+} from "./data";
 import { useDashboardData } from "./useDashboardData";
 import "./styles.css";
 
@@ -48,9 +53,11 @@ function App() {
   }
 
   const memoryPercent =
+    snapshot.memory.total_bytes !== null &&
+    snapshot.memory.used_bytes !== null &&
     snapshot.memory.total_bytes > 0
       ? (snapshot.memory.used_bytes / snapshot.memory.total_bytes) * 100
-      : 0;
+      : null;
   const highestProcess = processes[0];
 
   return (
@@ -82,7 +89,7 @@ function App() {
         <MetricCard
           label="CPU usage"
           value={formatPercent(snapshot.cpu.usage_percent)}
-          detail={`${(snapshot.cpu.frequency_mhz / 1_000).toFixed(2)} GHz / ${snapshot.cpu.temperature_celsius.toFixed(1)} C`}
+          detail={`${formatMetric(snapshot.cpu.frequency_mhz, "GHz", 2, 1_000)} / ${formatMetric(snapshot.cpu.temperature_celsius, "C")}`}
         />
         <MetricCard
           label="Memory used"
@@ -100,18 +107,21 @@ function App() {
           detail={
             !snapshot.battery.available
               ? "No battery sample reported"
-              : snapshot.battery.charging
+              : snapshot.battery.charging === true
                 ? "Charging"
-                : snapshot.battery.estimated_remaining_seconds !== null
+                : snapshot.battery.charging === false &&
+                    snapshot.battery.estimated_remaining_seconds !== null
                   ? `Estimated ${formatDurationSeconds(snapshot.battery.estimated_remaining_seconds)} remaining`
-                  : "Estimated time unavailable"
+                  : snapshot.battery.charging === false
+                    ? "Estimated time unavailable"
+                    : "Status unavailable"
           }
           tone="green"
         />
         <MetricCard
           label="CPU package power"
-          value={`${snapshot.cpu.package_power_watts.toFixed(1)} W`}
-          detail={`Battery signal ${snapshot.battery.power_watts.toFixed(1)} W`}
+          value={formatMetric(snapshot.cpu.package_power_watts, "W")}
+          detail={`Battery signal ${formatMetric(snapshot.battery.power_watts, "W")}`}
           tone="amber"
         />
         <MetricCard

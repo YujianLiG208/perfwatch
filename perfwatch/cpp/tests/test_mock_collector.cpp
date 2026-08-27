@@ -7,6 +7,8 @@ void test_proc_stat_parser();
 void test_meminfo_parser();
 void test_proc_pid_stat_parser();
 void test_power_supply_parser();
+void test_windows_process_cpu_delta();
+void test_windows_collector_returns_live_snapshot();
 
 int main() {
     test_mock_snapshot_shape();
@@ -14,6 +16,8 @@ int main() {
     test_meminfo_parser();
     test_proc_pid_stat_parser();
     test_power_supply_parser();
+    test_windows_process_cpu_delta();
+    test_windows_collector_returns_live_snapshot();
 
     const auto baseline = perfwatch::make_mock_snapshot(0);
     assert(baseline.timestamp_ms == 1'710'000'000'000);
@@ -46,11 +50,11 @@ int main() {
     const auto last_discharging = perfwatch::make_mock_snapshot(40);
     const auto first_charging = perfwatch::make_mock_snapshot(41);
     const auto next_cycle = perfwatch::make_mock_snapshot(80);
-    assert(!last_discharging.battery.charging);
+    assert(!last_discharging.battery.charging.value());
     assert(last_discharging.battery.percent == 68.0);
-    assert(first_charging.battery.charging);
+    assert(first_charging.battery.charging.value());
     assert(first_charging.battery.percent == 68.25);
-    assert(!next_cycle.battery.charging);
+    assert(!next_cycle.battery.charging.value());
     assert(next_cycle.battery.percent == 78.0);
 
     perfwatch::MockCollector first_collector;

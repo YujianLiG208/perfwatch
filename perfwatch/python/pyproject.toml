@@ -23,9 +23,14 @@ dev = [
     "ruff",
     "mypy",
 ]
+packaging = [
+    "pyinstaller==6.22.2",
+    "pybind11",
+]
 
 [project.scripts]
-perfwatch = "perfwatch.cli:main"
+perfwatch = "perfwatch.runtime:main"
+perfwatch-overlay = "perfwatch.overlay.__main__:main"
 perfwatch-server = "perfwatch.server:main"
 
 [tool.setuptools.packages.find]

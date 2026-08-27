@@ -1,7 +1,7 @@
 # Data Model
 
-SQLite persists enriched mock system snapshots, process samples, and application events for the
-integrated service and Dashboard. It does not add real runtime collection.
+SQLite persists enriched mock or live Windows system snapshots, process samples, and application
+events for the integrated service, Dashboard, and Overlay.
 
 ## samples_system
 
@@ -10,6 +10,12 @@ fields are flattened for single or batch insertion and time-window querying. The
 supports recent-history lookups, and repository results can be shaped as the metric series consumed
 by the dashboard. Missing optional fields are stored as `NULL` so partially unavailable snapshot
 sections can still be persisted.
+
+Phase 8 keeps Windows CPU usage, frequency, package power, temperature, memory, battery percentage,
+battery energy/rate, and related GPU fields nullable through C++ optionals, Python `None`, SQLite
+`NULL`, and API/TypeScript `null`. Generic Windows collection does not fabricate unavailable package
+power, temperature, process VRAM, or derived values. No Phase 8 schema migration was needed because
+the existing metric columns already accept `NULL`.
 
 `battery.estimated_remaining_seconds` is a `number | null` API field and is stored in the nullable
 `battery_estimated_remaining_seconds REAL` column. It is populated only for available, discharging
@@ -25,10 +31,16 @@ Stores per-process rows associated with a snapshot timestamp.
 values produce `NULL` without removing the process. The timestamp index supports recent process
 windows and latest top-process queries.
 
+Live Windows rows populate the available PID, name, CPU, and RSS values. Process VRAM and the derived
+score remain `NULL` when their inputs are unavailable; failed collection never substitutes a mock or
+zero-valued process row.
+
 ## events
 
 Stores timestamped application events with level, source, and message fields. Event writes share
-the persistence layer used by service error reporting.
+the persistence layer used by service error reporting. The private native `_collection_issues` key
+is removed before snapshot persistence/publication, and each stable issue code is recorded once as
+an event instead.
 
 ## Retention
 

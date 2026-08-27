@@ -17,6 +17,13 @@ def test_parser_uses_local_defaults() -> None:
     )
 
 
+def test_default_dashboard_directory_uses_frozen_bundle(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(server.sys, "frozen", True, raising=False)
+    monkeypatch.setattr(server.sys, "_MEIPASS", str(tmp_path), raising=False)
+
+    assert server.default_dashboard_directory() == tmp_path / "dashboard"
+
+
 def test_parser_accepts_explicit_server_options(tmp_path) -> None:
     args = server.create_parser().parse_args(
         [
