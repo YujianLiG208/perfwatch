@@ -33,6 +33,8 @@ struct ProcessorPowerInformation {
     ULONG current_idle_state;
 };
 
+constexpr ULONG kBatteryUnknownRate = 0x80000000UL;
+
 std::uint64_t filetime_value(const FILETIME& value) {
     ULARGE_INTEGER result{};
     result.LowPart = value.dwLowDateTime;
@@ -231,6 +233,7 @@ SystemSnapshot WindowsCollector::collect() {
                     static_cast<double>(battery_state.RemainingCapacity) / 1000.0;
             }
             if (battery_state.Rate != 0 &&
+                battery_state.Rate != kBatteryUnknownRate &&
                 battery_state.Rate != std::numeric_limits<ULONG>::max()) {
                 const auto signed_rate = static_cast<std::int64_t>(
                     static_cast<LONG>(battery_state.Rate)

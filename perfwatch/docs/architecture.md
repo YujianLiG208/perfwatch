@@ -126,4 +126,5 @@ runtime resource boundary check, a packaged explicit-mock HTTP/shutdown smoke, a
 hash verification.
 
 The local live collector smoke proves API availability on one machine, not sensor accuracy or
-long-running physical-hardware behavior. Those and all browser/Overlay visual checks remain Phase 9.
+long-running physical-hardware behavior. Phase 9 separately completed those physical-hardware and
+browser/Overlay visual checks on the project owner's Windows laptop.

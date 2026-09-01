@@ -1,6 +1,6 @@
 # Roadmap
 
-Phases 1-8 are complete and form the current Windows product baseline.
+Phases 1-9 are complete and form the current Windows product baseline.
 
 ## Platform Priority
 
@@ -11,7 +11,7 @@ hardware environment available to the project owner.
   compile-safe boundaries are retained only as a **Future long-term plan for Linux**.
 - GPU vendor-specific adapters are not scheduled in Phases 6-9. The existing interface and
   unavailable fallback are retained only as a **Future Long-term plan for GPU adapter**.
-- Phase 9 full-function acceptance covers the planned Windows product scope and intentionally
+- Phase 9 full-function acceptance covered the planned Windows product scope and intentionally
   excludes the deferred Linux runtime and GPU vendor-adapter work.
 
 ## Completed Baseline
@@ -42,19 +42,20 @@ hardware environment available to the project owner.
 Phase 7D is the documentation and full-acceptance closeout for these three feature deliveries. It is
 not a fourth Phase 7 feature.
 
-## Remaining Phase
+## Completed Phase 9
 
 ### Phase 9: Windows Hardware and Visual Validation
 
-- Validate the application on the project owner's physical Windows laptop, including sensor
+- Validated the application on the project owner's physical Windows laptop, including sensor
   availability, sampling stability, persistence, API/WebSocket behavior, and fallback handling.
-- Perform browser visual validation for the dashboard and desktop visual validation for the
+- Completed browser visual validation for the dashboard and desktop visual validation for the
   transparent overlay.
-- Run the packaged Windows application through the complete flow: collect, estimate, persist,
+- Ran the packaged Windows application through the complete flow: collect, estimate, persist,
   query, stream, display, overlay, shut down, and restart.
 
-Phase 9 is complete only when the packaged application can complete this full planned workflow on
-Windows. Linux runtime collection and GPU vendor adapters remain explicitly outside that gate.
+The packaged application completed the full planned workflow on the project owner's Windows laptop.
+Linux runtime collection and GPU vendor adapters remain explicitly outside the completed gate. See
+`Phase 9 Windows hardware and visual validation.md` for the recorded evidence.
 
 ## Future Long-term Work
 
