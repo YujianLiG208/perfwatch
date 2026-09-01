@@ -5,7 +5,7 @@ collection layer, Python orchestration and persistence, a FastAPI service, and a
 
 ## Current Status
 
-Phases 1-8 are complete. PerfWatch now has a Windows live collector, native Win32 Overlay,
+Phases 1-9 are complete. PerfWatch now has a Windows live collector, native Win32 Overlay,
 directory-mode application bundle, and versioned ZIP/checksum release path.
 
 | Phase | Status | Implemented scope |
@@ -43,7 +43,7 @@ directory-mode application bundle, and versioned ZIP/checksum release path.
 - Existing GPU interfaces and the unavailable fallback are retained only as a
   **Future Long-term plan for GPU adapter**. Vendor-specific GPU adapters are not assigned to
   Phases 6-9.
-- Phase 9 full-function acceptance covers the planned Windows scope and excludes these explicitly
+- Phase 9 full-function acceptance covered the planned Windows scope and excludes these explicitly
   deferred Linux and GPU-adapter items.
 
 ## Delivery Status
@@ -51,11 +51,12 @@ directory-mode application bundle, and versioned ZIP/checksum release path.
 | Phase | Status | Scope |
 | --- | --- | --- |
 | 8 | Completed | Windows collection, transparent Overlay, production runtime, directory packaging, ZIP/SHA-256, and release automation. |
-| 9 | Planned | Physical Windows hardware validation, browser and Overlay visual validation, and a packaged full-flow acceptance run. |
+| 9 | Completed | Physical Windows hardware validation, browser and Overlay visual validation, and a packaged full-flow acceptance run. |
 
-Phase 9 is complete only when the packaged Windows application can collect, estimate, persist,
-query, stream, display, overlay, shut down, and restart successfully on the available physical
-Windows laptop. See [`docs/roadmap.md`](docs/roadmap.md) for detailed acceptance scope.
+The packaged Windows application completed the Phase 9 collect, estimate, persist, query, stream,
+display, overlay, shutdown, and restart workflow on the available physical Windows laptop. See
+[`docs/Phase 9 Windows hardware and visual validation.md`](docs/Phase%209%20Windows%20hardware%20and%20visual%20validation.md)
+for the recorded evidence.
 
 ## Run Locally
 
@@ -134,8 +135,6 @@ npm.cmd run build
 - Generic Windows sources do not provide trustworthy CPU package power or temperature on every
   machine; unavailable live measurements remain `null`/`N/A`.
 - Windows ZIP files are unsigned; the SHA-256 proves file integrity, not publisher identity.
-- Automated tests do not validate real hardware sensors or browser and overlay visuals; those
-  checks are the Phase 9 acceptance work.
-- Phase 9 retains physical packaged full-flow validation, including live collection, persistence,
-  API/WebSocket behavior, Dashboard and Overlay display, shutdown, and restart.
+- Automated tests do not validate real hardware sensors or browser and Overlay visuals; those were
+  validated manually during Phase 9 on the project owner's Windows laptop.
 - Live Linux collection and GPU vendor adapters are long-term plans outside Phases 6-9.

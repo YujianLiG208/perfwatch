@@ -86,10 +86,11 @@ Phase 8 deliberately avoids repeating the complete suite for each work item:
   and recomputed SHA-256.
 - 8E: one static workflow/document consistency group and `git diff --check`; no application suite.
 
-These checks establish contract, composition, and one-machine capability. Phase 9 still owns physical
-sensor accuracy and stability, battery charge-state behavior, browser visual review, Overlay layout/
-topmost/click-through/DPI behavior, and the packaged live full flow through collection, estimation,
-persistence, queries, WebSocket streaming, Dashboard/Overlay display, shutdown, and restart.
+These checks establish contract, composition, and one-machine capability. Phase 9 completed the
+separate physical checks for sensor accuracy and stability, battery charge-state behavior, browser
+visual review, Overlay layout/topmost/click-through/DPI behavior, and the packaged live full flow
+through collection, estimation, persistence, queries, WebSocket streaming, Dashboard/Overlay
+display, shutdown, and restart.
 
 ## CI Limitations
 
@@ -99,6 +100,8 @@ Neither workflow validates physical sensor accuracy, live Linux/GPU collection, 
 visual behavior. A release workflow definition is not evidence of a remote run until GitHub reports
 one.
 
-## Future Real-Hardware Testing
+## Physical Hardware and Visual Testing
 
-Phase 9 should run opt-in physical hardware and visual checks outside default CI.
+Phase 9 ran the physical hardware and visual checks outside default CI on the project owner's Windows
+laptop. Repeat them for future hardware-specific changes; they remain intentionally outside the
+deterministic CI gate.
