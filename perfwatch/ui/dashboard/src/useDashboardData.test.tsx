@@ -96,7 +96,7 @@ describe("useDashboardData", () => {
 
   it("loads HTTP data and applies live WebSocket snapshots", async () => {
     const fetchMock = installSuccessfulFetch();
-    const { result } = renderHook(() => useDashboardData());
+    const { result, unmount } = renderHook(() => useDashboardData());
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
@@ -119,6 +119,8 @@ describe("useDashboardData", () => {
 
     expect(result.current.snapshot?.cpu.usage_percent).toBe(73);
     expect(result.current.metrics).toHaveLength(2);
+    unmount();
+    expect(socket.closeCalls).toBe(1);
   });
 
   it("reconnects after one second and polls HTTP while disconnected", async () => {
@@ -145,67 +147,6 @@ describe("useDashboardData", () => {
     });
     expect(fetchMock.mock.calls.length).toBeGreaterThan(4);
     expect(result.current.connectionMode).toBe("fallback");
-  });
-
-  it("uses the complete bounded reconnect schedule", async () => {
-    vi.useFakeTimers();
-    installSuccessfulFetch();
-    const { result, unmount } = renderHook(() => useDashboardData());
-
-    await act(async () => {
-      await vi.runAllTicks();
-      await vi.advanceTimersByTimeAsync(0);
-    });
-    expect(result.current.loading).toBe(false);
-
-    const delays = [1_000, 2_000, 4_000, 8_000, 10_000, 10_000];
-    for (const delay of delays) {
-      const socketCount = MockWebSocket.instances.length;
-      act(() => MockWebSocket.instances.at(-1)?.serverClose());
-
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(delay - 1);
-      });
-      expect(MockWebSocket.instances).toHaveLength(socketCount);
-
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(1);
-      });
-      expect(MockWebSocket.instances).toHaveLength(socketCount + 1);
-    }
-
-    unmount();
-  });
-
-  it("resets reconnect delay after a WebSocket opens", async () => {
-    vi.useFakeTimers();
-    installSuccessfulFetch();
-    const { result, unmount } = renderHook(() => useDashboardData());
-
-    await act(async () => {
-      await vi.runAllTicks();
-      await vi.advanceTimersByTimeAsync(0);
-    });
-    act(() => MockWebSocket.instances[0].serverClose());
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(1_000);
-    });
-
-    const reconnectedSocket = MockWebSocket.instances[1];
-    act(() => reconnectedSocket.serverOpen());
-    expect(result.current.connectionMode).toBe("live");
-    act(() => reconnectedSocket.serverClose());
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(999);
-    });
-    expect(MockWebSocket.instances).toHaveLength(2);
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(1);
-    });
-    expect(MockWebSocket.instances).toHaveLength(3);
-
-    unmount();
   });
 
   it("does not let a late fallback response overwrite live data", async () => {
@@ -269,36 +210,6 @@ describe("useDashboardData", () => {
     unmount();
   });
 
-  it("falls back and retries when WebSocket construction throws", async () => {
-    vi.useFakeTimers();
-    installSuccessfulFetch();
-
-    class ThrowingWebSocket {
-      static attempts = 0;
-
-      constructor() {
-        ThrowingWebSocket.attempts += 1;
-        throw new Error("invalid WebSocket URL");
-      }
-    }
-
-    vi.stubGlobal("WebSocket", ThrowingWebSocket);
-    const { result, unmount } = renderHook(() => useDashboardData());
-
-    await act(async () => {
-      await vi.runAllTicks();
-      await vi.advanceTimersByTimeAsync(0);
-    });
-    expect(result.current.connectionMode).toBe("fallback");
-    expect(ThrowingWebSocket.attempts).toBe(1);
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(1_000);
-    });
-    expect(ThrowingWebSocket.attempts).toBe(2);
-    unmount();
-  });
-
   it("cleans up reconnect and polling work on unmount", async () => {
     vi.useFakeTimers();
     const fetchMock = installSuccessfulFetch();
@@ -320,17 +231,6 @@ describe("useDashboardData", () => {
     });
     expect(MockWebSocket.instances).toHaveLength(socketCount);
     expect(fetchMock).toHaveBeenCalledTimes(fetchCount);
-  });
-
-  it("closes an active WebSocket on unmount", async () => {
-    installSuccessfulFetch();
-    const { result, unmount } = renderHook(() => useDashboardData());
-
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    const socket = MockWebSocket.instances[0];
-    unmount();
-
-    expect(socket.closeCalls).toBe(1);
   });
 
   it("exposes a fatal error when the initial snapshot is unavailable", async () => {

@@ -5,24 +5,12 @@ collection layer, Python orchestration and persistence, a FastAPI service, and a
 
 ## Current Status
 
-Phases 1-9 are complete. PerfWatch now has a Windows live collector, native Win32 Overlay,
-directory-mode application bundle, and versioned ZIP/checksum release path.
-
-| Phase | Status | Implemented scope |
-| --- | --- | --- |
-| 1 | Completed | Project skeleton, deterministic mock pipeline, Python/C++ boundaries, CI, and development setup. |
-| 2 | Completed | Fixture-tested parsers for Linux `/proc/stat`, `/proc/meminfo`, `/proc/<pid>/stat`, and battery `uevent` data. |
-| 3 | Completed | Hardened SQLite writes, batch insertion, events, recent-sample queries, indexes, and retention cleanup. |
-| 4 | Completed | Background sampling loop, SQLite persistence, API history/process queries, WebSocket streaming, configuration, and graceful shutdown. |
-| 5 | Completed | Vite/React/TypeScript dashboard with current metrics, history charts, top processes, WebSocket updates, and HTTP fallback. |
-| 6 | Completed | Root GitHub Actions CI with Python/C++ validation on Windows and Ubuntu using Python 3.11 and 3.12, Node 24 frontend test/build, Ruff, and stable required checks `python-cpp`, `frontend`, and `quality`. |
-| 7 | Completed | Deterministic evolving mock samples, analytics enrichment and persistence, and one local production entry point serving the API and built Dashboard together. |
-| 8 | Completed | Live nullable Windows metrics, native `ctypes` Win32 Overlay, PyInstaller 6.22.2 directory bundle, verified ZIP/SHA-256, and tag-gated Windows release workflow. |
+Phases 1-9 are complete. PerfWatch provides live Windows collection, analytics, SQLite history,
+HTTP/WebSocket APIs, a React Dashboard, a native Win32 Overlay, and a ZIP/checksum release path.
 
 ## Implemented Architecture
 
-- **C++:** collector interfaces, deterministic evolving mock data, live Windows CPU/memory/battery/
-  process collection, pybind11 bindings, and fixture-driven Linux parsers. Unsupported Windows
+- **C++:** live Windows CPU/memory/battery/process collection and pybind11 bindings. Unsupported
   measurements remain unavailable rather than becoming zero or mock data.
 - **Python:** explicit mock or native collection, battery-runtime and process-energy enrichment,
   SQLite storage, service orchestration, the packaged runtime, and native Win32 Overlay through
@@ -34,24 +22,6 @@ directory-mode application bundle, and versioned ZIP/checksum release path.
   as unavailable.
 - **Windows product:** PyInstaller 6.22.2 assembles `perfwatch.exe`, the Dashboard, SQLite schema,
   native extension, README, and license into one unsigned directory bundle.
-
-## Platform Direction
-
-- Windows is the only near-term runtime, validation, and release target.
-- Existing Linux parser and collector boundaries are retained only as a
-  **Future long-term plan for Linux**. Live Linux collection is not assigned to Phases 6-9.
-- Existing GPU interfaces and the unavailable fallback are retained only as a
-  **Future Long-term plan for GPU adapter**. Vendor-specific GPU adapters are not assigned to
-  Phases 6-9.
-- Phase 9 full-function acceptance covered the planned Windows scope and excludes these explicitly
-  deferred Linux and GPU-adapter items.
-
-## Delivery Status
-
-| Phase | Status | Scope |
-| --- | --- | --- |
-| 8 | Completed | Windows collection, transparent Overlay, production runtime, directory packaging, ZIP/SHA-256, and release automation. |
-| 9 | Completed | Physical Windows hardware validation, browser and Overlay visual validation, and a packaged full-flow acceptance run. |
 
 The packaged Windows application completed the Phase 9 collect, estimate, persist, query, stream,
 display, overlay, shutdown, and restart workflow on the available physical Windows laptop. See
@@ -137,4 +107,4 @@ npm.cmd run build
 - Windows ZIP files are unsigned; the SHA-256 proves file integrity, not publisher identity.
 - Automated tests do not validate real hardware sensors or browser and Overlay visuals; those were
   validated manually during Phase 9 on the project owner's Windows laptop.
-- Live Linux collection and GPU vendor adapters are long-term plans outside Phases 6-9.
+- Linux collection and vendor GPU adapters are not part of the current product.

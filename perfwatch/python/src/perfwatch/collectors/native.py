@@ -19,7 +19,3 @@ class NativeCollector:
                 "live Windows collector unavailable; explicitly enable mock mode for tests"
             ) from self._import_error
         return self._collector.collect()
-
-
-def get_snapshot() -> dict[str, Any]:
-    return NativeCollector().collect()

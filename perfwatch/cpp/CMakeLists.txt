@@ -7,20 +7,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(perfwatch_core
-    src/snapshot.cpp
-    src/collector.cpp
-    src/platform_common.cpp
-    platform/linux/linux_collector.cpp
-    platform/linux/proc_parser.cpp
-    platform/linux/power_supply_parser.cpp
     platform/windows/windows_collector.cpp
-    gpu/gpu_fallback.cpp
 )
 
 target_include_directories(perfwatch_core
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/gpu
 )
 
 target_compile_features(perfwatch_core PUBLIC cxx_std_17)
@@ -32,19 +24,9 @@ endif()
 enable_testing()
 
 add_executable(perfwatch_cpp_tests
-    tests/test_snapshot.cpp
-    tests/test_mock_collector.cpp
-    tests/test_proc_stat_parser.cpp
-    tests/test_meminfo_parser.cpp
-    tests/test_proc_pid_stat_parser.cpp
-    tests/test_power_supply_parser.cpp
     tests/test_windows_collector.cpp
 )
 target_link_libraries(perfwatch_cpp_tests PRIVATE perfwatch_core)
-target_compile_definitions(perfwatch_cpp_tests
-    PRIVATE
-        PERFWATCH_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tests/fixtures/linux"
-)
 add_test(NAME perfwatch_cpp_tests COMMAND perfwatch_cpp_tests)
 
 find_package(Python3 COMPONENTS Interpreter Development.Module QUIET)
@@ -65,5 +47,5 @@ if(pybind11_FOUND)
     pybind11_add_module(perfwatch_native bindings/pybind_module.cpp)
     target_link_libraries(perfwatch_native PRIVATE perfwatch_core)
 else()
-    message(STATUS "pybind11 not found; skipping perfwatch_native module build for Phase 1 skeleton.")
+    message(STATUS "pybind11 not found; skipping perfwatch_native module build.")
 endif()

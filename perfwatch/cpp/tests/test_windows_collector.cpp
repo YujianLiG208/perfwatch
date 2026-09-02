@@ -26,3 +26,9 @@ void test_windows_collector_returns_live_snapshot() {
     assert(*snapshot.memory.total_bytes > 0);
 #endif
 }
+
+int main() {
+    test_windows_process_cpu_delta();
+    test_windows_collector_returns_live_snapshot();
+    return 0;
+}

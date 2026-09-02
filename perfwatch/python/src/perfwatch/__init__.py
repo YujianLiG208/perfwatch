@@ -1,4 +1,4 @@
-"""Phase 1 perfwatch package."""
+"""PerfWatch package."""
 
 __all__ = ["__version__"]
 

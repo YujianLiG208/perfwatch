@@ -12,14 +12,14 @@ from perfwatch.api.service import ServiceState
 from perfwatch.api.websocket import router as websocket_router
 from perfwatch.collectors import Collector, create_collector
 from perfwatch.config.settings import Settings, get_settings
-from perfwatch.storage.repository import SnapshotRepository
+from perfwatch.storage.sqlite_writer import SQLiteWriter
 
 
 def create_app(
     *,
     settings: Settings | None = None,
     collector: Collector | None = None,
-    repository: SnapshotRepository | None = None,
+    repository: SQLiteWriter | None = None,
     dashboard_directory: Path | None = None,
 ) -> FastAPI:
     resolved_settings = settings or get_settings()
@@ -27,7 +27,7 @@ def create_app(
         settings=resolved_settings,
         collector=collector
         or create_collector(use_mock=resolved_settings.use_mock_collector),
-        repository=repository or SnapshotRepository(resolved_settings.database_path),
+        repository=repository or SQLiteWriter(resolved_settings.database_path),
     )
 
     @asynccontextmanager

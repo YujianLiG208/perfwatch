@@ -1,1 +1,3 @@
-WELCOME!! Please click into the main folder for the true README, this is just a warm welcome.
+# PerfWatch
+
+Project documentation and run instructions are in [perfwatch/README.md](perfwatch/README.md).

@@ -1,1 +1,1 @@
-"""Small deterministic analytics helpers for Phase 1."""
+"""Deterministic analytics helpers."""

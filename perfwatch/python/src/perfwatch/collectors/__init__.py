@@ -3,7 +3,7 @@
 from typing import Any, Protocol
 
 from perfwatch.collectors.mock import MockCollector
-from perfwatch.collectors.native import NativeCollector, get_snapshot
+from perfwatch.collectors.native import NativeCollector
 
 
 class Collector(Protocol):
@@ -16,4 +16,4 @@ def create_collector(*, use_mock: bool) -> Collector:
     return NativeCollector()
 
 
-__all__ = ["Collector", "create_collector", "get_snapshot"]
+__all__ = ["Collector", "create_collector"]
