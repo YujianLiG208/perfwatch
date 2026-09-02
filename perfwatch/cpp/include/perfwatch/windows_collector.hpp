@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "perfwatch/collector.hpp"
+#include "perfwatch/snapshot.hpp"
 
 namespace perfwatch {
 
@@ -28,11 +28,11 @@ struct CollectionIssue {
     std::string message;
 };
 
-class WindowsCollector final : public Collector {
+class WindowsCollector final {
 public:
     WindowsCollector();
-    ~WindowsCollector() override;
-    SystemSnapshot collect() override;
+    ~WindowsCollector();
+    SystemSnapshot collect();
     const std::vector<CollectionIssue>& collection_issues() const;
 
 private:

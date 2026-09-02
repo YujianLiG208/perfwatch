@@ -2,12 +2,12 @@
 #include <chrono>
 #include <cstdint>
 #include <limits>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "perfwatch/errors.hpp"
 #include "perfwatch/windows_collector.hpp"
 
 #ifdef _WIN32
@@ -139,7 +139,7 @@ const std::vector<CollectionIssue>& WindowsCollector::collection_issues() const 
 
 SystemSnapshot WindowsCollector::collect() {
 #ifndef _WIN32
-    throw PerfwatchError("live Windows collection is unavailable on this platform");
+    throw std::runtime_error("live Windows collection is unavailable on this platform");
 #else
     issues_.clear();
     SystemSnapshot snapshot{};

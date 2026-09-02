@@ -8,14 +8,14 @@ from typing import Any
 from perfwatch.analytics.snapshot import enrich_snapshot
 from perfwatch.collectors import Collector
 from perfwatch.config.settings import Settings
-from perfwatch.storage.repository import SnapshotRepository
+from perfwatch.storage.sqlite_writer import SQLiteWriter
 
 
 @dataclass
 class ServiceState:
     settings: Settings
     collector: Collector
-    repository: SnapshotRepository
+    repository: SQLiteWriter
     current_snapshot: dict[str, Any] | None = None
     sampling_task: asyncio.Task[None] | None = None
     _stop_event: asyncio.Event | None = None
@@ -43,7 +43,6 @@ class ServiceState:
 
         self.sampling_task = None
         self._stop_event = None
-        self.repository.close()
 
     async def sample_once(self) -> None:
         try:

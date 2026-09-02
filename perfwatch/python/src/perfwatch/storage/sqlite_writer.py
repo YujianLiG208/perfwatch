@@ -72,48 +72,20 @@ class SQLiteWriter:
                         "ADD COLUMN battery_estimated_remaining_seconds REAL"
                     )
 
-    def insert_snapshot(self, snapshot: dict[str, Any]) -> int:
-        system_ids = self.insert_snapshots([snapshot])
-        return system_ids[0]
-
-    def insert_snapshots(self, snapshots: Iterable[Mapping[str, Any]]) -> list[int]:
-        snapshots = list(snapshots)
+    def add_snapshot(self, snapshot: Mapping[str, Any]) -> int:
         self.initialize()
-
-        if not snapshots:
-            return []
-
         with closing(self.connect()) as connection:
             with connection:
-                system_ids: list[int] = []
-                for snapshot in snapshots:
-                    ts_ms = _snapshot_timestamp(snapshot)
-                    cursor = connection.execute(SYSTEM_INSERT_SQL, _system_values(snapshot, ts_ms))
-                    system_ids.append(int(cursor.lastrowid))
-                    self._insert_process_samples(
-                        connection,
-                        ts_ms,
-                        _processes_from_snapshot(snapshot),
-                    )
+                ts_ms = _snapshot_timestamp(snapshot)
+                cursor = connection.execute(SYSTEM_INSERT_SQL, _system_values(snapshot, ts_ms))
+                self._insert_process_samples(
+                    connection,
+                    ts_ms,
+                    _processes_from_snapshot(snapshot),
+                )
+                return int(cursor.lastrowid)
 
-        return system_ids
-
-    def insert_process_samples(
-        self,
-        timestamp_ms: int,
-        processes: Iterable[Mapping[str, Any]],
-    ) -> int:
-        self.initialize()
-        process_rows = list(processes)
-
-        if not process_rows:
-            return 0
-
-        with closing(self.connect()) as connection:
-            with connection:
-                return self._insert_process_samples(connection, int(timestamp_ms), process_rows)
-
-    def insert_event(self, timestamp_ms: int, level: str, source: str, message: str) -> int:
+    def add_event(self, *, timestamp_ms: int, level: str, source: str, message: str) -> int:
         if not level:
             raise ValueError("event level is required")
         if not source:
@@ -134,33 +106,7 @@ class SQLiteWriter:
                 )
                 return int(cursor.lastrowid)
 
-    def query_recent_system_samples(
-        self,
-        since_timestamp_ms: int,
-        until_timestamp_ms: int | None = None,
-        limit: int | None = None,
-    ) -> list[dict[str, Any]]:
-        return self._query_recent(
-            table="samples_system",
-            since_timestamp_ms=since_timestamp_ms,
-            until_timestamp_ms=until_timestamp_ms,
-            limit=limit,
-        )
-
-    def query_recent_process_samples(
-        self,
-        since_timestamp_ms: int,
-        until_timestamp_ms: int | None = None,
-        limit: int | None = None,
-    ) -> list[dict[str, Any]]:
-        return self._query_recent(
-            table="samples_process",
-            since_timestamp_ms=since_timestamp_ms,
-            until_timestamp_ms=until_timestamp_ms,
-            limit=limit,
-        )
-
-    def fetch_recent_metrics(self, *, limit: int = 100) -> list[dict[str, Any]]:
+    def get_recent_metrics(self, *, limit: int = 100) -> list[dict[str, Any]]:
         self.initialize()
         with closing(self.connect()) as connection:
             rows = connection.execute(
@@ -174,7 +120,7 @@ class SQLiteWriter:
             ).fetchall()
         return [self._metric_from_row(row) for row in rows]
 
-    def fetch_top_processes(
+    def get_top_processes(
         self,
         *,
         limit: int = 10,
@@ -217,22 +163,6 @@ class SQLiteWriter:
             ).fetchall()
         return [_row_to_public_dict(row) for row in rows]
 
-    def apply_retention_policy(self, older_than_timestamp_ms: int) -> dict[str, int]:
-        self.initialize()
-        cutoff = int(older_than_timestamp_ms)
-        deleted: dict[str, int] = {}
-
-        with closing(self.connect()) as connection:
-            with connection:
-                for table in ("samples_system", "samples_process", "events"):
-                    cursor = connection.execute(f"DELETE FROM {table} WHERE ts_ms < ?", (cutoff,))
-                    deleted[table] = max(cursor.rowcount, 0)
-
-        return deleted
-
-    def close(self) -> None:
-        return None
-
     @staticmethod
     def _metric_from_row(row: sqlite3.Row) -> dict[str, Any]:
         return {
@@ -265,37 +195,6 @@ class SQLiteWriter:
                 "temperature_celsius": row["gpu_temperature_celsius"],
             },
         }
-
-    def _query_recent(
-        self,
-        *,
-        table: str,
-        since_timestamp_ms: int,
-        until_timestamp_ms: int | None,
-        limit: int | None,
-    ) -> list[dict[str, Any]]:
-        if table not in {"samples_system", "samples_process"}:
-            raise ValueError(f"unsupported sample table: {table}")
-        if limit is not None and limit < 0:
-            raise ValueError("limit must be non-negative")
-
-        self.initialize()
-
-        params: list[Any] = [int(since_timestamp_ms)]
-        where = "ts_ms >= ?"
-        if until_timestamp_ms is not None:
-            where += " AND ts_ms <= ?"
-            params.append(int(until_timestamp_ms))
-
-        sql = f"SELECT * FROM {table} WHERE {where} ORDER BY ts_ms DESC, id DESC"
-        if limit is not None:
-            sql += " LIMIT ?"
-            params.append(int(limit))
-
-        with closing(self.connect()) as connection:
-            rows = connection.execute(sql, params).fetchall()
-
-        return [_row_to_public_dict(row) for row in rows]
 
     def _insert_process_samples(
         self,

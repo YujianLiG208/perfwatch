@@ -15,14 +15,6 @@ The workflow grants only `contents: read`, uses GitHub-owned actions, and cancel
 with a concurrency group scoped to each pull request or Git reference. The required branch checks
 are `python-cpp`, `frontend`, and `quality`.
 
-At documentation-capture time, the latest successful live validation run was:
-
-- Run: https://github.com/YujianLiG208/perfwatch/actions/runs/32549128595
-- Head SHA: `7779936240fe72095a922b5a955cdb8913be1877`
-
-That run is historical evidence for workflow commit `7779936240fe72095a922b5a955cdb8913be1877`;
-it is not evidence for the Phase 8 release workflow.
-
 ## Windows Release Workflow
 
 `.github/workflows/release.yml` has two jobs. `build-windows` runs on `windows-latest` with Python
@@ -45,6 +37,3 @@ No PAT or signing secret is required. Build, smoke, version, or archive failure 
 The checksum verifies integrity but not publisher identity. The committed workflow must reach GitHub
 before manual dispatch can use it, and tag publication requires a tag containing that workflow.
 Local static inspection does not claim a remote workflow run or published release.
-
-Local sandbox validation used Ninja with MSVC, an explicit `pybind11_DIR`, and Vitest threads.
-Those accommodations address the local sandbox environment and are not CI requirements.

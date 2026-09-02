@@ -8,7 +8,7 @@ import pytest
 from perfwatch.api.service import ServiceState
 from perfwatch.collectors.mock import get_mock_snapshot
 from perfwatch.config.settings import Settings
-from perfwatch.storage.repository import SnapshotRepository
+from perfwatch.storage.sqlite_writer import SQLiteWriter
 
 
 class CountingCollector:
@@ -36,17 +36,7 @@ class IssueCollector:
         return snapshot
 
 
-class TrackingRepository(SnapshotRepository):
-    def __init__(self, database_path) -> None:
-        super().__init__(database_path)
-        self.closed = False
-
-    def close(self) -> None:
-        self.closed = True
-        super().close()
-
-
-class RecordingRepository(SnapshotRepository):
+class RecordingRepository:
     def __init__(self) -> None:
         self.snapshots: list[dict[str, Any]] = []
         self.events: list[dict[str, Any]] = []
@@ -158,7 +148,7 @@ def test_service_startup_starts_sampling_task(tmp_path) -> None:
                 use_mock_collector=True,
             ),
             collector=CountingCollector(),
-            repository=SnapshotRepository(tmp_path / "startup.sqlite3"),
+            repository=SQLiteWriter(tmp_path / "startup.sqlite3"),
         )
 
         await service.start()
@@ -172,9 +162,9 @@ def test_service_startup_starts_sampling_task(tmp_path) -> None:
     asyncio.run(exercise())
 
 
-def test_service_shutdown_stops_task_and_closes_repository(tmp_path) -> None:
+def test_service_shutdown_stops_task(tmp_path) -> None:
     async def exercise() -> None:
-        repository = TrackingRepository(tmp_path / "shutdown.sqlite3")
+        repository = SQLiteWriter(tmp_path / "shutdown.sqlite3")
         service = ServiceState(
             settings=Settings(
                 database_path=tmp_path / "shutdown.sqlite3",
@@ -192,7 +182,6 @@ def test_service_shutdown_stops_task_and_closes_repository(tmp_path) -> None:
         assert task is not None
         assert task.done()
         assert service.sampling_task is None
-        assert repository.closed
 
     asyncio.run(exercise())
 
@@ -209,7 +198,7 @@ def test_sampling_loop_updates_snapshot_and_writes_sqlite(tmp_path) -> None:
                 use_mock_collector=True,
             ),
             collector=collector,
-            repository=SnapshotRepository(database_path),
+            repository=SQLiteWriter(database_path),
         )
 
         await service.start()
@@ -239,7 +228,7 @@ def test_collector_errors_are_recorded_without_stopping_service(tmp_path) -> Non
                 use_mock_collector=True,
             ),
             collector=FailingCollector(),
-            repository=SnapshotRepository(database_path),
+            repository=SQLiteWriter(database_path),
         )
 
         await service.start()

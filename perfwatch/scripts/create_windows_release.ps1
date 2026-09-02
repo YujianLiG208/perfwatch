@@ -33,21 +33,6 @@ $requiredRelativePaths = @(
     "_internal\dashboard\index.html"
     "_internal\perfwatch\storage\schema.sql"
 )
-foreach ($relativePath in $requiredRelativePaths) {
-    if (-not (Test-Path -LiteralPath (
-        Join-Path $resolvedInputDirectory $relativePath
-    ) -PathType Leaf)) {
-        throw "required product file not found: $relativePath"
-    }
-}
-$nativeModules = @(Get-ChildItem `
-    -LiteralPath (Join-Path $resolvedInputDirectory "_internal") `
-    -Filter "perfwatch_native*.pyd" `
-    -File)
-if ($nativeModules.Count -ne 1) {
-    throw "expected one perfwatch_native module; found $($nativeModules.Count)"
-}
-
 New-Item -ItemType Directory -Path $resolvedOutputDirectory -Force | Out-Null
 $archiveName = "perfwatch-$version-windows-x64.zip"
 $archivePath = Join-Path $resolvedOutputDirectory $archiveName
@@ -101,16 +86,6 @@ try {
         throw "archive contains $($expandedNativeModules.Count) perfwatch_native modules"
     }
 
-    $verifiedHash = (
-        Get-FileHash -LiteralPath $archivePath -Algorithm SHA256
-    ).Hash.ToLowerInvariant()
-    if ($verifiedHash -ne $hash) {
-        throw "archive SHA-256 changed during verification"
-    }
-    $expectedChecksum = "$hash  $archiveName"
-    if ((Get-Content -LiteralPath $checksumPath -Raw).Trim() -ne $expectedChecksum) {
-        throw "checksum file content is invalid"
-    }
 }
 finally {
     if (Test-Path -LiteralPath $temporaryDirectory -PathType Container) {

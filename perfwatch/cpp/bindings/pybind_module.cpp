@@ -1,7 +1,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "perfwatch/collector.hpp"
 #include "perfwatch/windows_collector.hpp"
 
 namespace py = pybind11;
@@ -61,13 +60,6 @@ py::dict snapshot_to_dict(const perfwatch::SystemSnapshot& snapshot) {
 
 PYBIND11_MODULE(perfwatch_native, module) {
     module.doc() = "Perfwatch native collectors.";
-    module.def(
-        "get_mock_snapshot",
-        [](std::uint64_t sample_index) {
-            return snapshot_to_dict(perfwatch::make_mock_snapshot(sample_index));
-        },
-        py::arg("sample_index") = 0
-    );
 #ifdef _WIN32
     py::class_<perfwatch::WindowsCollector>(module, "WindowsCollector")
         .def(py::init<>())

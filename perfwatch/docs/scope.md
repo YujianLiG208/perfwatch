@@ -1,24 +1,16 @@
 # Scope
 
-## In Scope for MVP
+PerfWatch is a local Windows performance and energy monitor. The completed product includes:
 
-- Cross-platform project skeleton with C++ and Python boundaries.
-- Mock-first collection pipeline.
-- SQLite persistence for system and process samples.
-- FastAPI local API with health and snapshot endpoints.
-- Minimal tests for deterministic mock behavior.
-- Fixture-based parser tests in later phases.
+- live Windows CPU, memory, battery, and process collection;
+- estimated battery runtime and relative process energy scores;
+- SQLite persistence, HTTP/WebSocket APIs, and a React Dashboard;
+- a native click-through Win32 Overlay;
+- an unsigned Windows x64 directory bundle, ZIP, checksum, and tag-gated release workflow.
 
-## Out of Scope for MVP
+Unsupported measurements remain unavailable instead of becoming zero or mock data. Mock collection
+is explicit and intended for tests and package smoke checks.
 
-- Transparent overlay.
-- Installer and release packaging.
-- Complex battery prediction.
-- Full dashboard implementation.
-- Production-grade GPU adapter coverage.
-
-## Engineering Honesty
-
-perfwatch must clearly distinguish measured values from estimated values. In Phase 1 all snapshot
-values are deterministic mock values. Battery remaining time and process energy score should be
-described as estimated, not measured.
+Linux collection, vendor-specific GPU collection, installers, signing, automatic updates, cloud
+services, and remote telemetry are outside the current product. Add them only when a concrete user
+requirement and validation environment exist.
