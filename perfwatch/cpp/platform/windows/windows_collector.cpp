@@ -1,9 +1,11 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -49,28 +51,12 @@ std::string process_name(HANDLE process) {
         return "unknown";
     }
 
-    const std::wstring full_path(path.data(), length);
-    const auto separator = full_path.find_last_of(L"\\/");
-    const auto name = full_path.substr(separator == std::wstring::npos ? 0 : separator + 1);
-    const auto utf8_size = WideCharToMultiByte(
-        CP_UTF8, 0, name.data(), static_cast<int>(name.size()), nullptr, 0, nullptr, nullptr
-    );
-    if (utf8_size <= 0) {
+    try {
+        const auto name = std::filesystem::path(path.data(), path.data() + length).filename();
+        return name.empty() ? "unknown" : name.u8string();
+    } catch (const std::system_error&) {
         return "unknown";
     }
-
-    std::string utf8(static_cast<std::size_t>(utf8_size), '\0');
-    WideCharToMultiByte(
-        CP_UTF8,
-        0,
-        name.data(),
-        static_cast<int>(name.size()),
-        utf8.data(),
-        utf8_size,
-        nullptr,
-        nullptr
-    );
-    return utf8;
 }
 
 #endif

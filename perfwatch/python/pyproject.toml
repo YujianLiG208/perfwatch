@@ -13,6 +13,7 @@ dependencies = [
     "pydantic",
     "httpx",
     "websockets",
+    "pywin32==312; sys_platform == 'win32'",
 ]
 
 [project.optional-dependencies]
