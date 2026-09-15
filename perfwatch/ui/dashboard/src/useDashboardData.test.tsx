@@ -5,7 +5,7 @@ import { useDashboardData } from "./useDashboardData";
 import { snapshotFixture } from "./test/fixtures";
 import type { Snapshot } from "./types";
 
-class MockWebSocket {
+class MockWebSocket extends EventTarget {
   static instances: MockWebSocket[] = [];
   static readonly CONNECTING = 0;
   static readonly OPEN = 1;
@@ -14,12 +14,8 @@ class MockWebSocket {
   readonly url: string;
   readyState: number = MockWebSocket.CONNECTING;
   closeCalls = 0;
-  onopen: ((event: Event) => void) | null = null;
-  onmessage: ((event: MessageEvent<string>) => void) | null = null;
-  onerror: ((event: Event) => void) | null = null;
-  onclose: ((event: CloseEvent) => void) | null = null;
-
   constructor(url: string | URL) {
+    super();
     this.url = String(url);
     MockWebSocket.instances.push(this);
   }
@@ -31,18 +27,18 @@ class MockWebSocket {
 
   serverOpen(): void {
     this.readyState = MockWebSocket.OPEN;
-    this.onopen?.(new Event("open"));
+    this.dispatchEvent(new Event("open"));
   }
 
   serverMessage(snapshot: Snapshot): void {
-    this.onmessage?.(
+    this.dispatchEvent(
       new MessageEvent("message", { data: JSON.stringify(snapshot) }),
     );
   }
 
   serverClose(): void {
     this.readyState = MockWebSocket.CLOSED;
-    this.onclose?.(new CloseEvent("close"));
+    this.dispatchEvent(new CloseEvent("close"));
   }
 }
 
@@ -106,6 +102,7 @@ describe("useDashboardData", () => {
     expect(result.current.processes[0].name).toBe("mock_process");
     expect(result.current.metrics).toHaveLength(1);
 
+    await waitFor(() => expect(MockWebSocket.instances).toHaveLength(1));
     const socket = MockWebSocket.instances[0];
     act(() => socket.serverOpen());
     expect(result.current.connectionMode).toBe("live");
@@ -123,7 +120,7 @@ describe("useDashboardData", () => {
     expect(socket.closeCalls).toBe(1);
   });
 
-  it("reconnects after one second and polls HTTP while disconnected", async () => {
+  it("backs off retries, resets on open, and polls HTTP while disconnected", async () => {
     vi.useFakeTimers();
     const fetchMock = installSuccessfulFetch();
     const { result } = renderHook(() => useDashboardData());
@@ -133,6 +130,9 @@ describe("useDashboardData", () => {
       await vi.advanceTimersByTimeAsync(0);
     });
     expect(result.current.loading).toBe(false);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
 
     act(() => MockWebSocket.instances[0].serverClose());
     expect(result.current.connectionMode).toBe("reconnecting");
@@ -142,20 +142,38 @@ describe("useDashboardData", () => {
     });
     expect(MockWebSocket.instances).toHaveLength(2);
 
+    act(() => MockWebSocket.instances[1].serverClose());
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(4_000);
+      await vi.advanceTimersByTimeAsync(2_000);
     });
-    expect(fetchMock.mock.calls.length).toBeGreaterThan(4);
+    expect(MockWebSocket.instances).toHaveLength(3);
+
+    await act(async () => {
+      // Include the query's deferred notification after the five-second poll.
+      await vi.advanceTimersByTimeAsync(2_001);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(10);
     expect(result.current.connectionMode).toBe("fallback");
+
+    act(() => MockWebSocket.instances[2].serverOpen());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    act(() => MockWebSocket.instances[2].serverClose());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+    expect(MockWebSocket.instances).toHaveLength(4);
   });
 
   it("does not let a late fallback response overwrite live data", async () => {
     vi.useFakeTimers();
     const fallbackSnapshot = deferred<Response>();
+    const fallbackSignals: AbortSignal[] = [];
     let snapshotCalls = 0;
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (input: RequestInfo | URL) => {
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         if (url.endsWith("/health")) {
           return response({ status: "ok" });
@@ -168,6 +186,9 @@ describe("useDashboardData", () => {
         }
         if (url.endsWith("/snapshot")) {
           snapshotCalls += 1;
+          if (snapshotCalls > 1 && init?.signal) {
+            fallbackSignals.push(init.signal);
+          }
           return snapshotCalls === 1
             ? response(snapshotFixture)
             : fallbackSnapshot.promise;
@@ -181,38 +202,56 @@ describe("useDashboardData", () => {
       await vi.runAllTicks();
       await vi.advanceTimersByTimeAsync(0);
     });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
 
     act(() => MockWebSocket.instances[0].serverClose());
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(1_000);
+      // Let one handshake time out while the HTTP fallback remains in flight.
+      await vi.advanceTimersByTimeAsync(7_001);
     });
-    act(() => MockWebSocket.instances[1].serverOpen());
+    expect(snapshotCalls).toBe(2);
+    expect(fallbackSignals[0].aborted).toBe(false);
+    const socket = MockWebSocket.instances.at(-1)!;
+    expect(socket.readyState).toBe(MockWebSocket.CONNECTING);
+    act(() => socket.serverOpen());
+    expect(fallbackSignals[0].aborted).toBe(true);
 
     const liveSnapshot: Snapshot = {
       ...snapshotFixture,
       timestamp_ms: snapshotFixture.timestamp_ms + 2_000,
       cpu: { ...snapshotFixture.cpu, usage_percent: 88 },
     };
-    act(() => MockWebSocket.instances[1].serverMessage(liveSnapshot));
+    act(() => socket.serverMessage(liveSnapshot));
 
     const staleSnapshot: Snapshot = {
       ...snapshotFixture,
       timestamp_ms: snapshotFixture.timestamp_ms + 1_000,
       cpu: { ...snapshotFixture.cpu, usage_percent: 5 },
     };
+    act(() => MockWebSocket.instances[0].serverMessage(staleSnapshot));
     await act(async () => {
       fallbackSnapshot.resolve(response(staleSnapshot));
-      await vi.runAllTicks();
+      await vi.advanceTimersByTimeAsync(5_000);
     });
 
+    expect(snapshotCalls).toBe(2);
     expect(result.current.connectionMode).toBe("live");
     expect(result.current.snapshot?.cpu.usage_percent).toBe(88);
     unmount();
   });
 
-  it("cleans up reconnect and polling work on unmount", async () => {
+  it("handles constructor failure and stops reconnect and polling on unmount", async () => {
     vi.useFakeTimers();
     const fetchMock = installSuccessfulFetch();
+    const createSocket = vi.fn(function (url: string | URL) {
+      if (createSocket.mock.calls.length === 1) {
+        throw new Error("WebSocket construction failed");
+      }
+      return new MockWebSocket(url);
+    });
+    vi.stubGlobal("WebSocket", createSocket);
     const { result, unmount } = renderHook(() => useDashboardData());
 
     await act(async () => {
@@ -220,16 +259,25 @@ describe("useDashboardData", () => {
       await vi.advanceTimersByTimeAsync(0);
     });
     expect(result.current.loading).toBe(false);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(result.current.connectionMode).toBe("reconnecting");
+    expect(fetchMock).toHaveBeenCalledTimes(7);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+    expect(createSocket).toHaveBeenCalledTimes(2);
 
     act(() => MockWebSocket.instances[0].serverClose());
-    const socketCount = MockWebSocket.instances.length;
     const fetchCount = fetchMock.mock.calls.length;
     unmount();
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(20_000);
     });
-    expect(MockWebSocket.instances).toHaveLength(socketCount);
+    expect(createSocket).toHaveBeenCalledTimes(2);
     expect(fetchMock).toHaveBeenCalledTimes(fetchCount);
   });
 

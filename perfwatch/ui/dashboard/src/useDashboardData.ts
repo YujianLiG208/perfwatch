@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { QueryClient, useQuery } from "@tanstack/react-query";
+import ReconnectingWebSocket from "partysocket/ws";
+import { useEffect, useRef, useState } from "react";
 
 import {
   fetchHealth,
@@ -6,7 +8,7 @@ import {
   fetchSnapshot,
   fetchTopProcesses,
 } from "./api";
-import { getReconnectDelay, resolveWebSocketUrl } from "./connection";
+import { resolveWebSocketUrl } from "./connection";
 import { appendMetricSample, snapshotToMetricSample } from "./data";
 import type {
   ConnectionMode,
@@ -15,6 +17,7 @@ import type {
   Snapshot,
 } from "./types";
 
+const HTTP_QUERY_KEY = ["dashboard-http"];
 const FALLBACK_POLL_INTERVAL_MS = 5_000;
 const WEBSOCKET_URL = import.meta.env.VITE_WS_URL ?? "/ws/snapshot";
 
@@ -31,272 +34,148 @@ export interface DashboardData {
 }
 
 export function useDashboardData(): DashboardData {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [apiHealthy, setApiHealthy] = useState(false);
-  const [connectionMode, setConnectionMode] =
-    useState<ConnectionMode>("connecting");
-  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
-  const [metrics, setMetrics] = useState<MetricSample[]>([]);
-  const [processes, setProcesses] = useState<ProcessSample[]>([]);
-  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  const [queryClient] = useState(() => new QueryClient());
+  const [state, setState] = useState<DashboardData>({
+    loading: true,
+    error: null,
+    notice: null,
+    apiHealthy: false,
+    connectionMode: "connecting",
+    snapshot: null,
+    metrics: [],
+    processes: [],
+    lastUpdated: null,
+  });
+  const [polling, setPolling] = useState(false);
+  const websocketLive = useRef(false);
+  const initial = state.loading;
+
+  const { data } = useQuery(
+    {
+      queryKey: HTTP_QUERY_KEY,
+      queryFn: async ({ signal }) => {
+        const [health, snapshot, history, processes] = await Promise.allSettled([
+          fetchHealth(signal),
+          fetchSnapshot(signal),
+          initial ? fetchRecentMetrics(signal) : Promise.resolve<Snapshot[]>([]),
+          fetchTopProcesses(signal),
+        ]);
+        return { initial, health, snapshot, history, processes };
+      },
+      enabled: initial || polling,
+      refetchInterval: polling ? FALLBACK_POLL_INTERVAL_MS : false,
+      refetchIntervalInBackground: true,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      retry: false,
+      networkMode: "always",
+      gcTime: 0,
+      structuralSharing: false,
+    },
+    queryClient,
+  );
 
   useEffect(() => {
-    const abortController = new AbortController();
-    let disposed = false;
-    let socket: WebSocket | null = null;
-    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-    let pollingTimer: ReturnType<typeof setInterval> | null = null;
-    let activePollController: AbortController | null = null;
-    let reconnectAttempt = 0;
-    let pollGeneration = 0;
-    let pollInFlight = false;
-    let websocketLive = false;
-
-    const applySnapshot = (nextSnapshot: Snapshot): void => {
-      if (disposed) {
-        return;
-      }
-      setSnapshot(nextSnapshot);
-      setProcesses(nextSnapshot.top_processes.slice(0, 10));
-      setMetrics((currentMetrics) =>
-        appendMetricSample(
-          currentMetrics,
-          snapshotToMetricSample(nextSnapshot),
-        ),
-      );
-      setLastUpdated(nextSnapshot.timestamp_ms);
-      setError(null);
-    };
-
-    const stopPolling = (): void => {
-      pollGeneration += 1;
-      if (pollingTimer !== null) {
-        clearInterval(pollingTimer);
-        pollingTimer = null;
-      }
-      activePollController?.abort();
-      activePollController = null;
-      pollInFlight = false;
-    };
-
-    const pollHttp = async (generation: number): Promise<void> => {
-      if (
-        disposed ||
-        websocketLive ||
-        generation !== pollGeneration ||
-        pollInFlight
-      ) {
-        return;
-      }
-
-      const pollController = new AbortController();
-      activePollController = pollController;
-      pollInFlight = true;
-      const [healthResult, snapshotResult, processResult] =
-        await Promise.allSettled([
-          fetchHealth(pollController.signal),
-          fetchSnapshot(pollController.signal),
-          fetchTopProcesses(pollController.signal),
-        ]);
-
-      if (
-        disposed ||
-        websocketLive ||
-        generation !== pollGeneration
-      ) {
-        if (activePollController === pollController) {
-          activePollController = null;
-          pollInFlight = false;
-        }
-        return;
-      }
-
-      setApiHealthy(
-        healthResult.status === "fulfilled" &&
-          healthResult.value.status === "ok",
-      );
-
-      if (snapshotResult.status === "fulfilled") {
-        applySnapshot(snapshotResult.value);
-        if (processResult.status === "fulfilled") {
-          setProcesses(processResult.value.slice(0, 10));
-        }
-        setConnectionMode("fallback");
-      } else {
-        setConnectionMode("disconnected");
-      }
-
-      if (activePollController === pollController) {
-        activePollController = null;
-        pollInFlight = false;
-      }
-    };
-
-    const startPolling = (): void => {
-      if (pollingTimer !== null) {
-        return;
-      }
-      pollGeneration += 1;
-      const generation = pollGeneration;
-      void pollHttp(generation);
-      pollingTimer = setInterval(() => {
-        void pollHttp(generation);
-      }, FALLBACK_POLL_INTERVAL_MS);
-    };
-
-    function handleWebSocketDisconnect(): void {
-      if (disposed) {
-        return;
-      }
-
-      websocketLive = false;
-      setConnectionMode("reconnecting");
-      startPolling();
-
-      if (reconnectTimer !== null) {
-        clearTimeout(reconnectTimer);
-      }
-      const delay = getReconnectDelay(reconnectAttempt);
-      reconnectAttempt += 1;
-      reconnectTimer = setTimeout(() => {
-        reconnectTimer = null;
-        connectWebSocket(true);
-      }, delay);
+    if (!data || websocketLive.current) {
+      return;
     }
-
-    function connectWebSocket(isReconnect: boolean): void {
-      if (disposed) {
-        return;
+    setState((current) => {
+      const apiHealthy =
+        data.health.status === "fulfilled" && data.health.value.status === "ok";
+      if (data.snapshot.status === "rejected") {
+        return {
+          ...current,
+          loading: false,
+          apiHealthy,
+          connectionMode: "disconnected",
+          error: data.initial ? "Current snapshot is unavailable." : current.error,
+        };
       }
-
-      setConnectionMode(isReconnect ? "reconnecting" : "connecting");
-      let nextSocket: WebSocket;
-      try {
-        nextSocket = new WebSocket(resolveWebSocketUrl(WEBSOCKET_URL));
-      } catch {
-        socket = null;
-        handleWebSocketDisconnect();
-        return;
-      }
-      socket = nextSocket;
-
-      nextSocket.onopen = () => {
-        if (disposed || socket !== nextSocket) {
-          return;
-        }
-        websocketLive = true;
-        reconnectAttempt = 0;
-        stopPolling();
-        setConnectionMode("live");
-      };
-
-      nextSocket.onmessage = (event) => {
-        if (disposed || socket !== nextSocket) {
-          return;
-        }
-        try {
-          applySnapshot(JSON.parse(event.data) as Snapshot);
-        } catch {
-          setNotice("A live update could not be read.");
-        }
-      };
-
-      nextSocket.onclose = () => {
-        if (disposed || socket !== nextSocket) {
-          return;
-        }
-        socket = null;
-        handleWebSocketDisconnect();
-      };
-    }
-
-    const initialize = async (): Promise<void> => {
-      const [healthResult, snapshotResult, historyResult, processResult] =
-        await Promise.allSettled([
-          fetchHealth(abortController.signal),
-          fetchSnapshot(abortController.signal),
-          fetchRecentMetrics(abortController.signal),
-          fetchTopProcesses(abortController.signal),
-        ]);
-
-      if (disposed) {
-        return;
-      }
-
-      setApiHealthy(
-        healthResult.status === "fulfilled" &&
-          healthResult.value.status === "ok",
-      );
-
-      if (snapshotResult.status === "rejected") {
-        setLoading(false);
-        setError("Current snapshot is unavailable.");
-        setConnectionMode("disconnected");
-        return;
-      }
-
-      const initialSnapshot = snapshotResult.value;
-      const initialMetrics =
-        historyResult.status === "fulfilled"
-          ? historyResult.value.reduce<MetricSample[]>(
-              (currentMetrics, metricSnapshot) =>
-                appendMetricSample(
-                  currentMetrics,
-                  snapshotToMetricSample(metricSnapshot),
-                ),
+      const snapshot = data.snapshot.value;
+      const metrics = data.initial
+        ? data.history.status === "fulfilled"
+          ? data.history.value.reduce<MetricSample[]>(
+              (samples, sample) =>
+                appendMetricSample(samples, snapshotToMetricSample(sample)),
               [],
             )
-          : [];
+          : []
+        : current.metrics;
+      return {
+        loading: false,
+        error: null,
+        notice:
+          data.initial &&
+          (data.history.status === "rejected" || data.processes.status === "rejected")
+            ? "Some historical or process data is temporarily unavailable."
+            : current.notice,
+        apiHealthy,
+        connectionMode: data.initial ? "connecting" : "fallback",
+        snapshot,
+        metrics: appendMetricSample(metrics, snapshotToMetricSample(snapshot)),
+        processes: (data.processes.status === "fulfilled"
+          ? data.processes.value
+          : snapshot.top_processes).slice(0, 10),
+        lastUpdated: snapshot.timestamp_ms,
+      };
+    });
+  }, [data]);
 
-      setSnapshot(initialSnapshot);
-      setMetrics(
-        appendMetricSample(
-          initialMetrics,
-          snapshotToMetricSample(initialSnapshot),
-        ),
-      );
-      setProcesses(
-        processResult.status === "fulfilled"
-          ? processResult.value.slice(0, 10)
-          : initialSnapshot.top_processes.slice(0, 10),
-      );
-      setLastUpdated(initialSnapshot.timestamp_ms);
+  const canConnect = !state.loading && state.snapshot !== null;
+  useEffect(() => {
+    if (!canConnect) {
+      return;
+    }
+    const socket = new ReconnectingWebSocket(
+      () => resolveWebSocketUrl(WEBSOCKET_URL),
+      [],
+      {
+        minReconnectionDelay: 1_000,
+        maxReconnectionDelay: 10_000,
+        reconnectionDelayGrowFactor: 2,
+        minUptime: 0,
+        connectionTimeout: 4_000,
+      },
+    );
 
-      if (
-        historyResult.status === "rejected" ||
-        processResult.status === "rejected"
-      ) {
-        setNotice("Some historical or process data is temporarily unavailable.");
-      }
-
-      setLoading(false);
-      connectWebSocket(false);
+    socket.onclose = socket.onerror = () => {
+      websocketLive.current = false;
+      setPolling(true);
+      setState((current) => ({ ...current, connectionMode: "reconnecting" }));
     };
-
-    void initialize();
+    socket.onopen = () => {
+      websocketLive.current = true;
+      setPolling(false);
+      void queryClient.cancelQueries({ queryKey: HTTP_QUERY_KEY });
+      setState((current) => ({ ...current, connectionMode: "live" }));
+    };
+    socket.onmessage = (event) => {
+      try {
+        const snapshot = JSON.parse(event.data) as Snapshot;
+        const processes = snapshot.top_processes.slice(0, 10);
+        const sample = snapshotToMetricSample(snapshot);
+        setState((current) => ({
+          ...current,
+          snapshot,
+          processes,
+          metrics: appendMetricSample(current.metrics, sample),
+          lastUpdated: snapshot.timestamp_ms,
+          error: null,
+        }));
+      } catch {
+        setState((current) => ({
+          ...current,
+          notice: "A live update could not be read.",
+        }));
+      }
+    };
 
     return () => {
-      disposed = true;
-      abortController.abort();
-      stopPolling();
-      if (reconnectTimer !== null) {
-        clearTimeout(reconnectTimer);
-      }
-      socket?.close();
+      websocketLive.current = false;
+      socket.onopen = socket.onmessage = socket.onclose = socket.onerror = null;
+      socket.close();
     };
-  }, []);
+  }, [canConnect, queryClient]);
 
-  return {
-    loading,
-    error,
-    notice,
-    apiHealthy,
-    connectionMode,
-    snapshot,
-    metrics,
-    processes,
-    lastUpdated,
-  };
+  return state;
 }

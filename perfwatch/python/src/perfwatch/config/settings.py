@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from configparser import ConfigParser
 from dataclasses import dataclass
 import os
 from pathlib import Path
@@ -30,8 +31,6 @@ def _read_bool(name: str, *, default: bool) -> bool:
         return default
 
     normalized = value.strip().lower()
-    if normalized in {"1", "true", "yes", "on"}:
-        return True
-    if normalized in {"0", "false", "no", "off"}:
-        return False
-    raise ValueError(f"{name} must be a boolean value")
+    if normalized not in ConfigParser.BOOLEAN_STATES:
+        raise ValueError(f"{name} must be a boolean value")
+    return ConfigParser.BOOLEAN_STATES[normalized]

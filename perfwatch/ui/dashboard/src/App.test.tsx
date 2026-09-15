@@ -4,22 +4,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { snapshotFixture } from "./test/fixtures";
 
-class PassiveWebSocket {
+class PassiveWebSocket extends EventTarget {
   static instances: PassiveWebSocket[] = [];
-
-  onopen: ((event: Event) => void) | null = null;
-  onmessage: ((event: MessageEvent<string>) => void) | null = null;
-  onerror: ((event: Event) => void) | null = null;
-  onclose: ((event: CloseEvent) => void) | null = null;
+  readyState = 0;
 
   constructor(readonly url: string | URL) {
+    super();
     PassiveWebSocket.instances.push(this);
   }
 
-  close(): void {}
+  close(): void {
+    this.readyState = 3;
+  }
 
   serverClose(): void {
-    this.onclose?.(new CloseEvent("close"));
+    this.readyState = 3;
+    this.dispatchEvent(new CloseEvent("close"));
   }
 }
 
@@ -174,6 +174,7 @@ describe("App", () => {
 
     expect(await screen.findByText("process-0")).toBeInTheDocument();
     fetchMock.mockRejectedValue(new Error("backend unavailable"));
+    await waitFor(() => expect(PassiveWebSocket.instances).toHaveLength(1));
     act(() => PassiveWebSocket.instances[0].serverClose());
 
     expect(await screen.findByText("Disconnected")).toBeInTheDocument();
