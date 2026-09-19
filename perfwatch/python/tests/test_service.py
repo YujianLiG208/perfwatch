@@ -139,7 +139,7 @@ def test_sample_once_records_analytics_error_and_persists_raw_snapshot(
     asyncio.run(exercise())
 
 
-def test_service_startup_starts_sampling_task(tmp_path) -> None:
+def test_service_startup_and_shutdown_manage_sampling_task(tmp_path) -> None:
     async def exercise() -> None:
         service = ServiceState(
             settings=Settings(
@@ -152,34 +152,14 @@ def test_service_startup_starts_sampling_task(tmp_path) -> None:
         )
 
         await service.start()
+        task = service.sampling_task
         try:
             assert service.current_snapshot is not None
-            assert service.sampling_task is not None
-            assert not service.sampling_task.done()
+            assert task is not None
+            assert not task.done()
         finally:
             await service.stop()
 
-    asyncio.run(exercise())
-
-
-def test_service_shutdown_stops_task(tmp_path) -> None:
-    async def exercise() -> None:
-        repository = SQLiteWriter(tmp_path / "shutdown.sqlite3")
-        service = ServiceState(
-            settings=Settings(
-                database_path=tmp_path / "shutdown.sqlite3",
-                snapshot_interval_seconds=0.01,
-                use_mock_collector=True,
-            ),
-            collector=CountingCollector(),
-            repository=repository,
-        )
-
-        await service.start()
-        task = service.sampling_task
-        await service.stop()
-
-        assert task is not None
         assert task.done()
         assert service.sampling_task is None
 

@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import signal
 import socket
 import subprocess
+from tempfile import TemporaryDirectory
 import time
 import urllib.request
 from pathlib import Path
@@ -37,52 +39,54 @@ def main() -> int:
 
     port = _unused_port(args.host)
     base_url = f"http://{args.host}:{port}"
-    process = subprocess.Popen(
-        [
-            str(executable),
-            "--mock",
-            "--no-overlay",
-            "--host",
-            args.host,
-            "--port",
-            str(port),
-        ],
-        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
-    )
-    try:
-        deadline = time.monotonic() + args.timeout
-        last_error = "application did not respond"
-        while time.monotonic() < deadline:
-            if process.poll() is not None:
-                raise RuntimeError(f"application exited early with code {process.returncode}")
-            try:
-                _read(f"{base_url}/health")
-                snapshot = json.loads(_read(f"{base_url}/snapshot"))
-                _read(f"{base_url}/")
-                if snapshot.get("timestamp_ms") != MOCK_TIMESTAMP_MS:
-                    raise RuntimeError("snapshot did not contain the explicit mock baseline")
-                break
-            except (OSError, RuntimeError, ValueError) as error:
-                last_error = str(error)
-                time.sleep(0.1)
-        else:
-            raise RuntimeError(f"package smoke timed out: {last_error}")
-
-        process.send_signal(signal.CTRL_BREAK_EVENT)
+    with TemporaryDirectory(prefix="perfwatch-package-smoke-") as temporary_directory:
+        process = subprocess.Popen(
+            [
+                str(executable),
+                "--mock",
+                "--no-overlay",
+                "--host",
+                args.host,
+                "--port",
+                str(port),
+            ],
+            env={**os.environ, "LOCALAPPDATA": temporary_directory},
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+        )
         try:
-            return_code = process.wait(timeout=10.0)
-        except subprocess.TimeoutExpired as error:
-            process.kill()
-            process.wait()
-            raise RuntimeError("packaged application did not stop") from error
-        if return_code != 0:
-            raise RuntimeError(f"packaged application exited with code {return_code}")
-        print("Package smoke passed: /health, /snapshot, /, clean shutdown")
-        return 0
-    finally:
-        if process.poll() is None:
-            process.kill()
-            process.wait()
+            deadline = time.monotonic() + args.timeout
+            last_error = "application did not respond"
+            while time.monotonic() < deadline:
+                if process.poll() is not None:
+                    raise RuntimeError(f"application exited early with code {process.returncode}")
+                try:
+                    _read(f"{base_url}/health")
+                    snapshot = json.loads(_read(f"{base_url}/snapshot"))
+                    _read(f"{base_url}/")
+                    if snapshot.get("timestamp_ms") != MOCK_TIMESTAMP_MS:
+                        raise RuntimeError("snapshot did not contain the explicit mock baseline")
+                    break
+                except (OSError, RuntimeError, ValueError) as error:
+                    last_error = str(error)
+                    time.sleep(0.1)
+            else:
+                raise RuntimeError(f"package smoke timed out: {last_error}")
+
+            process.send_signal(signal.CTRL_BREAK_EVENT)
+            try:
+                return_code = process.wait(timeout=10.0)
+            except subprocess.TimeoutExpired as error:
+                process.kill()
+                process.wait()
+                raise RuntimeError("packaged application did not stop") from error
+            if return_code != 0:
+                raise RuntimeError(f"packaged application exited with code {return_code}")
+            print("Package smoke passed: /health, /snapshot, /, clean shutdown")
+            return 0
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait()
 
 
 if __name__ == "__main__":

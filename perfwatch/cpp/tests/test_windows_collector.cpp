@@ -1,3 +1,5 @@
+// These checks must also run in Release builds.
+#undef NDEBUG
 #include <cassert>
 
 #include "perfwatch/windows_collector.hpp"

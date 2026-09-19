@@ -138,14 +138,6 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders unavailable for a null process score", async () => {
-    installFetch(1, 200, null);
-    render(<App />);
-
-    expect(await screen.findByText("process-0")).toBeInTheDocument();
-    expect(screen.getAllByText("Unavailable")).toHaveLength(2);
-  });
-
   it("renders unavailable measurements without substituting zero", async () => {
     installFetch(1, 200, null, true);
     render(<App />);
@@ -154,6 +146,13 @@ describe("App", () => {
     expect(screen.getByText("Unavailable / Unavailable")).toBeInTheDocument();
     expect(screen.getByText("Battery signal Unavailable")).toBeInTheDocument();
     expect(screen.queryByText("0.0 W")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("row", { name: /process-0/ }).lastElementChild,
+    ).toHaveTextContent(/^Unavailable$/);
+    expect(
+      screen.getByText("Estimated process energy score").closest("article")
+        ?.querySelector("strong"),
+    ).toHaveTextContent(/^Unavailable$/);
   });
 
   it("renders a fatal snapshot error", async () => {

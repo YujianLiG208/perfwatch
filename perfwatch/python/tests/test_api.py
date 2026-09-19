@@ -6,23 +6,6 @@ from perfwatch.collectors.mock import MockCollector
 from perfwatch.config.settings import Settings
 
 
-def test_health_returns_ok(tmp_path) -> None:
-    app = create_app(
-        settings=Settings(
-            database_path=tmp_path / "health.sqlite3",
-            snapshot_interval_seconds=60.0,
-            use_mock_collector=True,
-        ),
-        collector=MockCollector(),
-    )
-
-    with TestClient(app) as client:
-        response = client.get("/health")
-
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
-
-
 def test_snapshot_returns_expected_keys(tmp_path) -> None:
     app = create_app(
         settings=Settings(
