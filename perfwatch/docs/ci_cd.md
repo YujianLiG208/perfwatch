@@ -5,15 +5,23 @@ the workflow for pushes to `main` and pull requests targeting `main`.
 
 The job topology is:
 
-- `python-cpp-matrix`: four Windows-and-Ubuntu cells covering Python 3.11 and Python 3.12. Each
-  cell builds C++ with CMake, runs CTest, and runs pytest.
-- `python-cpp`: stable aggregator that succeeds only when the complete matrix succeeds.
+- `changes`: compares the PR base or previous push SHA with the checkout, including deleted and
+  renamed paths. Markdown-only changes skip product checks. Workflow, script, and packaging changes
+  select all checks; Python changes select backend tests and Ruff; C++ changes select backend and
+  native checks; Dashboard changes select frontend checks. `python/pyproject.toml` also selects native
+  checks, and `.pre-commit-config.yaml` selects Ruff.
+- `python-cpp-matrix`: four Windows-and-Ubuntu cells covering Python 3.11 and Python 3.12 when backend
+  checks are selected. Each runs pytest. Native checks install pybind11, build both the C++ tests and
+  required Python extension, and run CTest. C++ test assertions stay active in Release builds.
+- `python-cpp`: stable aggregator that requires successful change detection and either a successful
+  selected matrix or an intentionally skipped matrix.
 - `frontend`: Node 24 job that runs the Vitest tests and the TypeScript/Vite production build.
-- `quality`: Python 3.11 job that runs Ruff against the Python source and tests.
+- `quality`: Python 3.11 job that installs only Ruff and checks Python source, tests, and scripts.
 
 The workflow grants only `contents: read`, uses GitHub-owned actions, and cancels superseded runs
 with a concurrency group scoped to each pull request or Git reference. The required branch checks
-are `python-cpp`, `frontend`, and `quality`.
+are `python-cpp`, `frontend`, and `quality`. Unselected frontend and quality jobs are skipped at the
+job level; the workflow itself still runs so required checks do not remain pending.
 
 ## Windows Release Workflow
 

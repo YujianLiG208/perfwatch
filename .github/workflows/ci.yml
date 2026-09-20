@@ -14,8 +14,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.scope.outputs.backend }}
+      native: ${{ steps.scope.outputs.native }}
+      frontend: ${{ steps.scope.outputs.frontend }}
+      quality: ${{ steps.scope.outputs.quality }}
+    steps:
+      - name: Check out repository history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Select checks for changed paths
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: python perfwatch/scripts/ci_scope.py
+
   python-cpp-matrix:
     name: python-cpp-matrix (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -34,18 +55,22 @@ jobs:
           cache-dependency-path: perfwatch/python/pyproject.toml
 
       - name: Install Python dependencies
-        run: python -m pip install -e "perfwatch/python[dev]" pybind11
+        run: python -m pip install -e perfwatch/python pytest
+
+      - name: Install native build dependency
+        if: ${{ needs.changes.outputs.native == 'true' }}
+        run: python -m pip install pybind11
 
       - name: Configure C++
+        if: ${{ needs.changes.outputs.native == 'true' }}
         run: cmake -S perfwatch/cpp -B perfwatch/build -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build C++ tests
-        run: cmake --build perfwatch/build --config Release
-
-      - name: Require native Python extension
-        run: cmake --build perfwatch/build --config Release --target perfwatch_native
+      - name: Build C++ tests and require native Python extension
+        if: ${{ needs.changes.outputs.native == 'true' }}
+        run: cmake --build perfwatch/build --config Release --target perfwatch_cpp_tests perfwatch_native
 
       - name: Run C++ tests
+        if: ${{ needs.changes.outputs.native == 'true' }}
         run: ctest --test-dir perfwatch/build --build-config Release --output-on-failure
 
       - name: Run Python tests
@@ -53,16 +78,29 @@ jobs:
 
   python-cpp:
     name: python-cpp
-    needs: python-cpp-matrix
+    needs: [changes, python-cpp-matrix]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - name: Verify Python and C++ matrix
         shell: bash
-        run: test "${{ needs.python-cpp-matrix.result }}" = "success"
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          BACKEND_CHANGED: ${{ needs.changes.outputs.backend }}
+          MATRIX_RESULT: ${{ needs.python-cpp-matrix.result }}
+        run: |
+          test "$CHANGES_RESULT" = "success"
+          if [ "$BACKEND_CHANGED" = "true" ]; then
+            test "$MATRIX_RESULT" = "success"
+          else
+            test "$BACKEND_CHANGED" = "false"
+            test "$MATRIX_RESULT" = "skipped"
+          fi
 
   frontend:
     name: frontend
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -89,6 +127,8 @@ jobs:
 
   quality:
     name: quality
+    needs: changes
+    if: ${{ needs.changes.outputs.quality == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -101,8 +141,8 @@ jobs:
           cache: pip
           cache-dependency-path: perfwatch/python/pyproject.toml
 
-      - name: Install Python dependencies
-        run: python -m pip install -e "perfwatch/python[dev]"
+      - name: Install Ruff
+        run: python -m pip install ruff
 
       - name: Run Ruff
-        run: python -m ruff check perfwatch/python/src perfwatch/python/tests
+        run: python -m ruff check --config perfwatch/python/pyproject.toml perfwatch/python/src perfwatch/python/tests perfwatch/scripts

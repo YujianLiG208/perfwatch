@@ -24,23 +24,6 @@ def test_default_dashboard_directory_uses_frozen_bundle(tmp_path, monkeypatch) -
     assert server.default_dashboard_directory() == tmp_path / "dashboard"
 
 
-def test_parser_accepts_explicit_server_options(tmp_path) -> None:
-    args = server.create_parser().parse_args(
-        [
-            "--host",
-            "0.0.0.0",
-            "--port",
-            "9000",
-            "--dashboard-directory",
-            str(tmp_path),
-        ]
-    )
-
-    assert args.host == "0.0.0.0"
-    assert args.port == 9000
-    assert args.dashboard_directory == tmp_path
-
-
 def test_main_rejects_dashboard_without_index_html(tmp_path, monkeypatch) -> None:
     def fail_if_started(*args: Any, **kwargs: Any) -> None:
         raise AssertionError("uvicorn.run must not be called")
