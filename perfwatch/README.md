@@ -1,33 +1,22 @@
 # perfwatch
 
-perfwatch is a Windows-first local performance and energy monitoring prototype. It combines a C++
+perfwatch is a Windows local performance and energy monitoring prototype. It combines a C++
 collection layer, Python orchestration and persistence, a FastAPI service, and a React dashboard.
 
-## Current Status
-
-Phases 1-9 are complete. PerfWatch provides live Windows collection, analytics, SQLite history,
-HTTP/WebSocket APIs, a React Dashboard, a native Win32 Overlay, and a ZIP/checksum release path.
-Auditing finished: Over Documentation, Over Engineering Implementation, Over Testing and Refining CI scope
 
 ## Implemented Architecture
 
-- **C++:** live Windows CPU/memory/battery/process collection and pybind11 bindings. Unsupported
-  measurements remain unavailable rather than becoming zero or mock data.
+- **C++:** live Windows CPU/memory/battery/process collection and pybind11 bindings.
 - **Python:** explicit mock or native collection, battery-runtime and process-energy enrichment,
   SQLite storage, service orchestration, the packaged runtime, and native Win32 Overlay through
   `ctypes`.
 - **API:** `GET /health`, `GET /snapshot`, `GET /metrics/recent`, `GET /processes/top`, and
   `WebSocket /ws/snapshot` in the integrated baseline.
-- **Dashboard:** local CPU, memory, battery, package-power, process, history, and connection views,
+- **Dashboard:** 
   served with same-origin HTTP and WebSocket paths in production. Nullable live measurements render
   as unavailable.
 - **Windows product:** PyInstaller 6.22.2 assembles `perfwatch.exe`, the Dashboard, SQLite schema,
-  native extension, README, and license into one unsigned directory bundle.
-
-The packaged Windows application completed the Phase 9 collect, estimate, persist, query, stream,
-display, overlay, shutdown, and restart workflow on the available physical Windows laptop. See
-[`docs/Phase 9 Windows hardware and visual validation.md`](docs/Phase%209%20Windows%20hardware%20and%20visual%20validation.md)
-for the recorded evidence.
+  native extension, into one unsigned directory bundle.
 
 ## Run Locally
 
@@ -99,13 +88,3 @@ npm.cmd run test
 npm.cmd run build
 ```
 
-## Current Limitations
-
-- Battery-runtime and process-energy values remain estimates rather than measured watts.
-- The evolving mock samples are deterministic fixtures, not live sensor readings.
-- Generic Windows sources do not provide trustworthy CPU package power or temperature on every
-  machine; unavailable live measurements remain `null`/`N/A`.
-- Windows ZIP files are unsigned; the SHA-256 proves file integrity, not publisher identity.
-- Automated tests do not validate real hardware sensors or browser and Overlay visuals; those were
-  validated manually during Phase 9 on the project owner's Windows laptop.
-- Linux collection and vendor GPU adapters are not part of the current product.
