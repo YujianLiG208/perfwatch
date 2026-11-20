@@ -46,5 +46,5 @@ and the Overlay and coordinates their shutdown.
 ## Packaging
 
 PyInstaller produces an unsigned directory bundle containing the executable, Dashboard, SQLite
-schema, and native module. PowerShell creates a versioned ZIP and SHA-256 file. GitHub Actions can
+schema, and native module. PowerShell creates a versioned ZIP. GitHub Actions can
 build artifacts manually and publishes a GitHub Release only for an exact version tag.
